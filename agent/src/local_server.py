@@ -76,6 +76,22 @@ def background_collector_loop():
 def start_background_loop():
     threading.Thread(target=background_collector_loop, daemon=True).start()
 
+@app.get("/audit-logs")
+def get_audit_logs():
+    entries = fetch_audit_entries(limit=50)
+    return [
+        {
+            "id": e.get("id"),
+            "payload_id": e.get("payload_id"),
+            "metric": e.get("metric"),
+            "raw_input": e.get("raw_input"),
+            "sanitized_payload": e.get("redacted_payload"),
+            "sha256_hash": e.get("payload_sha256"),
+            "created_at": e.get("timestamp_utc") or datetime.now(timezone.utc).isoformat()
+        }
+        for e in entries
+    ]
+
 @app.get("/egress")
 def get_egress_proof():
     """

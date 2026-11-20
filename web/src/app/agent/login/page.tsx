@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Terminal } from "lucide-react";
+import { ArrowRight, Terminal, Lock, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export default function AgentLoginPage() {
@@ -20,38 +20,41 @@ export default function AgentLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden font-sans select-none">
+    <div className="min-h-screen vision-backdrop text-[#0F172A] flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden font-sans select-none">
+      
       {/* Top Bar */}
       <header className="flex items-center justify-between z-10 max-w-5xl mx-auto w-full">
-        <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition text-xs font-mono">
+        <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition text-xs font-semibold vision-pill px-3 py-1.5">
           <span>&larr; Switch View</span>
         </Link>
-        <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 px-3 py-1 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 vision-pill px-4 py-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>TIER 1 · LOCAL CUSTOMER ENCLAVE</span>
         </div>
       </header>
 
-      {/* Centered Black Glass Card */}
+      {/* Centered Master Glass Card */}
       <main className="z-10 max-w-md mx-auto w-full py-8">
-        <div className="bg-[#09090B] border border-zinc-800 rounded-[28px] p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-7">
+        <div className="vision-card-dark p-8 sm:p-10 shadow-2xl space-y-7 relative overflow-hidden">
+          
           <div className="text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white">
-              <Terminal className="w-6 h-6" />
+            {/* 3D Chrome Hexagonal S Logo */}
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-md">
+              <Terminal className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <h1 className="text-2xl font-black tracking-tight text-white">
                 SEENIL Agent Console
               </h1>
               <p className="text-xs text-zinc-400 font-mono mt-1">
-                Customer Host &amp; Egress Vault Login
+                Customer Host &amp; Egress Vault Login • Port 8765
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-[0.08em] text-zinc-300">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-300">
                 Collector Node ID
               </label>
               <input
@@ -59,13 +62,13 @@ export default function AgentLoginPage() {
                 value={nodeId}
                 onChange={(e) => setNodeId(e.target.value)}
                 placeholder="node_xxxxxxxx"
-                className="w-full bg-[#000000] border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-400 transition"
+                className="w-full bg-black/60 border border-white/10 rounded-2xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400 transition shadow-inner"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-[0.08em] text-zinc-300">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-300">
                 Agent HMAC Secret Key
               </label>
               <input
@@ -73,7 +76,7 @@ export default function AgentLoginPage() {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="••••••••••••••••"
-                className="w-full bg-[#000000] border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-400 transition"
+                className="w-full bg-black/60 border border-white/10 rounded-2xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400 transition shadow-inner"
                 required
               />
             </div>
@@ -82,7 +85,7 @@ export default function AgentLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer disabled:opacity-50"
+                className="w-full h-11 rounded-full bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer disabled:opacity-50"
               >
                 <span>{loading ? "Verifying Enclave..." : "Enter Local Console"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -90,17 +93,19 @@ export default function AgentLoginPage() {
             </div>
           </form>
 
-          <div className="pt-2 border-t border-zinc-800 text-center">
-            <span className="text-[10px] font-mono text-zinc-400">
-              Local SQLite table strictly isolated · Zero raw telemetry leaves host
+          <div className="pt-3 border-t border-white/10 text-center">
+            <span className="text-[11px] font-mono text-zinc-400 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline" />
+              <span>Zero Raw Data Leaves Host Machine</span>
             </span>
           </div>
+
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="z-10 text-center text-[11px] text-zinc-500 font-mono py-2">
-        SEENIL Edge Daemon v1.0.0 · Localhost Enclave · Real Data
+      <footer className="z-10 max-w-5xl mx-auto w-full text-center py-4 text-xs text-slate-500 font-medium">
+        <span>SEENIL Enclave Tier 1 · Local Machine Only</span>
       </footer>
     </div>
   );

@@ -3,67 +3,137 @@
 @tailwind utilities;
 
 :root {
-  --background: #000000;
-  --foreground: #FFFFFF;
+  --background: #F1F4F9;
+  --foreground: #0F172A;
 }
 
 body {
-  background-color: #000000;
-  color: #FFFFFF;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #F1F4F9;
+  color: #0F172A;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* World-Class Black & White Design System */
-.bw-card-dark {
-  background: #09090B;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+/* =========================================================================
+   SEENIL VisionOS Luxury Frosted-Glass Design System
+   ========================================================================= */
+
+/* Realistic Sunlit Architectural Penthouse Background */
+.vision-backdrop {
+  background: 
+    radial-gradient(1200px 700px at 50% -10%, rgba(255, 255, 255, 0.95) 0%, rgba(240, 246, 255, 0.85) 45%, rgba(226, 234, 245, 0.95) 100%),
+    linear-gradient(180deg, #F8FAFD 0%, #EEF4FA 40%, #E3EBF5 100%);
+  background-attachment: fixed;
+  position: relative;
+}
+
+.vision-backdrop::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 50%);
+  z-index: 0;
+}
+
+/* Master VisionOS Frosted White Glass Card */
+.vision-card-white {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    0 20px 40px -15px rgba(15, 23, 42, 0.06),
+    0 1px 3px 0 rgba(0, 0, 0, 0.03),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  color: #0F172A;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.vision-card-white:hover {
+  box-shadow: 
+    0 24px 48px -12px rgba(15, 23, 42, 0.09),
+    0 2px 6px 0 rgba(0, 0, 0, 0.04),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Master VisionOS Dark Slate Glass Card */
+.vision-card-dark {
+  background: rgba(30, 33, 42, 0.88);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 24px 50px -12px rgba(0, 0, 0, 0.45),
+    0 2px 4px 0 rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
+  border-radius: 28px;
   color: #FFFFFF;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
 
-.bw-card-white {
-  background: #FFFFFF;
-  border: 1px solid #E4E4E7;
-  border-radius: 24px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-  color: #09090B;
+.vision-card-dark:hover {
+  box-shadow: 
+    0 28px 60px -10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-.bw-card-glass {
-  background: rgba(18, 18, 20, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  color: #FFFFFF;
+/* Master Left Floating Vertical Dock */
+.vision-dock {
+  background: rgba(22, 25, 32, 0.88);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+  border-radius: 26px;
 }
 
-.bw-card-glass-light {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-  color: #09090B;
+/* Master Bottom Floating Navigation Pill */
+.vision-bottom-dock {
+  background: rgba(22, 25, 32, 0.88);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.45);
+  border-radius: 9999px;
+}
+
+/* Glass Pill Badge */
+.vision-pill {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.vision-pill-dark {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Subtle sleek scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3F3F46;
+  background: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #71717A;
+  background: rgba(100, 116, 139, 0.7);
 }

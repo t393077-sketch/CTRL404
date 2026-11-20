@@ -1,0 +1,112 @@
+{
+  "1": {
+    "title": "Normal Telemetry Baseline",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:34.195153+00:00",
+      "Agent Status": "online (Outbox depth: 0)",
+      "Baseline Samples Fed": 5,
+      "Dynamic Baseline Median": "29.1%",
+      "MAD Deviation": "0.0%",
+      "MAD Anomaly Triggered": false,
+      "Expected Result": "All baseline events processed without anomaly trigger, health nominal.",
+      "Outcome": "Observed normal baseline established successfully."
+    }
+  },
+  "2": {
+    "title": "CPU Spike (Full Anomaly -> RCA Chain)",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:34.288962+00:00",
+      "Telemetry Value": "96.4% CPU load",
+      "Anomaly Detection": "is_anomaly=True, modified_z_score=91.60",
+      "Correlation & Incident": "ID=inc_d483a6ca | Title='Correlated Anomaly in Infrastructure Performance Matrix' | Severity=critical",
+      "RCA Diagnosis": "Multiple telemetry indicators exhibited simultaneous statistical deviation from rolling MAD median....",
+      "Remediation Policy": "OPS-SERVICE-RESTART-01 (Standard automated recovery runbook)",
+      "UI Query (/api/v1/incidents)": "Incident verified in active cloud dockets (1 total incidents)",
+      "Expected Result": "Telemetry -> Anomaly -> Correlation -> Incident -> RCA -> UI chain fully holds.",
+      "Outcome": "Complete causal chain verified from local agent trigger to cloud RCA docket."
+    }
+  },
+  "3": {
+    "title": "Inject Fake Sensitive Data & Privacy Proof",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:34.844318+00:00",
+      "Raw Local Input": "Failed password for invalid user admin from 192.168.1.105 port 54322 ssh2: token=MasterPas...",
+      "Outgoing Payload": "{\"payload_id\":\"bf3c23f7-9b82-4170-bc71-b26d2387caea\",\"tenant_id\":\"tenant_alpha\",\"source_id...",
+      "Secret Leaks Detected": 0,
+      "Redacted Tags Found": "[REDACTED:PASSWORD], [REDACTED:API_KEY], [REDACTED:EMAIL], [REDACTED:IP]",
+      "Cryptographic Hash": "6d098e6ab648a866a688efe6...",
+      "Expected Result": "Sensitive tokens scrubbed before crossing trust boundary; raw input preserved in local SQLite only.",
+      "Outcome": "0 secrets leaked. Verified side-by-side in Egress Proof table."
+    }
+  },
+  "4": {
+    "title": "Kill Cloud Connection",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:34.908754+00:00",
+      "Agent Control Action": "Connection severed. Agent now buffering to local SQLite outbox.",
+      "Outage Mode Active": true,
+      "Outbox Buffer Depth": 0,
+      "Expected Result": "Agent network link severed; agent enters local buffer mode.",
+      "Outcome": "Connection severed. Network transport marked as severed on dashboard."
+    }
+  },
+  "5": {
+    "title": "Telemetry Generation During Outage",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:34.970241+00:00",
+      "Initial Outbox Depth": 0,
+      "Packets Generated": 3,
+      "New Outbox Depth": 3,
+      "Cloud DB Stored Count During Outage": 0,
+      "Expected Result": "All 3 packets held locally in SQLite outbox; 0 packets leaked to cloud during drop.",
+      "Outcome": "Confirmed perfect local isolation and buffering in SQLite."
+    }
+  },
+  "6": {
+    "title": "Restore Connection & Zero-Loss Reconciliation",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:35.158518+00:00",
+      "Connection Status": "RESTORED (Online)",
+      "Packets Flushed to Cloud": 3,
+      "Original Payload IDs Preserved": true,
+      "Replay Duplicate Response": [
+        "duplicate"
+      ],
+      "Duplicate Rows Inserted in DB": 0,
+      "Expected Result": "All buffered packets stored with original payload IDs, zero loss, zero duplicate rows.",
+      "Outcome": "Zero data loss and 100% unique transaction invariant verified."
+    }
+  },
+  "7": {
+    "title": "Send Late / Out-of-Order Event Ordering",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:37.495984+00:00",
+      "Late Event Trigger": "Late event sent with 120s delay (22:39:37Z). Flagged as LATE on Cloud.",
+      "Cloud Ingest Response": "HTTP 200 OK",
+      "Chronological Ordering Verified": true,
+      "Expected Result": "Delayed event is placed in its true chronological past position (ORDER BY event_time_utc), not at top.",
+      "Outcome": "Deterministic chronological order preserved across out-of-order deliveries."
+    }
+  },
+  "8": {
+    "title": "Stop Agent & 60s Watchdog Offline Detection",
+    "status": "PASS",
+    "details": {
+      "Timestamp": "2026-11-20T22:41:38.218311+00:00",
+      "Watchdog Inactivity Threshold": "60.0s",
+      "Node Offline Status": "offline",
+      "Reason Logged": "Collector offline: no heartbeat received for >60s",
+      "Health Transition": "Downgraded to 'Poor'",
+      "Post-Test Reset": "Restored node_40b9c8e26f984f20 to online status",
+      "Expected Result": "Silence >60s triggers automated offline transition and Poor health downgrade.",
+      "Outcome": "Watchdog accurately detected silence and executed deterministic state transition."
+    }
+  }
+}

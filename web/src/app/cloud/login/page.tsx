@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Cloud, ArrowRight } from "lucide-react";
+import { Cloud, ArrowRight, ShieldCheck, Lock } from "lucide-react";
 import Link from "next/link";
 
 export default function CloudLoginPage() {
@@ -20,60 +20,62 @@ export default function CloudLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden font-sans select-none">
+    <div className="min-h-screen vision-backdrop text-[#0F172A] flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden font-sans select-none">
+      
       {/* Top Bar */}
       <header className="flex items-center justify-between z-10 max-w-5xl mx-auto w-full">
-        <Link href="/" className="flex items-center gap-2 text-zinc-400 hover:text-white transition text-xs font-mono">
+        <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition text-xs font-semibold vision-pill px-3 py-1.5">
           <span>&larr; Switch View</span>
         </Link>
-        <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 px-3 py-1 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 vision-pill px-4 py-1.5">
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           <span>TIER 2 · CENTRAL AIOPS SAAS</span>
         </div>
       </header>
 
-      {/* Centered Black Glass Card */}
+      {/* Centered Master Glass Card */}
       <main className="z-10 max-w-md mx-auto w-full py-8">
-        <div className="bg-[#09090B] border border-zinc-800 rounded-[28px] p-8 sm:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.9)] space-y-7">
+        <div className="vision-card-white p-8 sm:p-10 shadow-2xl space-y-7 relative overflow-hidden">
+          
           <div className="text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white">
-              <Cloud className="w-6 h-6" />
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-zinc-900 text-white flex items-center justify-center shadow-lg">
+              <Cloud className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
                 SEENIL Cloud SaaS
               </h1>
-              <p className="text-xs text-zinc-400 font-mono mt-1">
-                Central Multi-Tenant Ingestion &amp; AIOps
+              <p className="text-xs text-slate-500 font-mono mt-1">
+                Central Multi-Tenant Ingestion &amp; AIOps • Port 8000
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-[0.08em] text-zinc-300">
-                Operator Email
+              <label className="text-[11px] font-mono uppercase tracking-wider text-slate-600">
+                Operator Work Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="analyst@seenil.cloud"
-                className="w-full bg-[#000000] border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-400 transition"
+                className="w-full bg-white/80 border border-slate-300 rounded-2xl px-4 py-3 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition shadow-inner"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-[0.08em] text-zinc-300">
-                SaaS Password
+              <label className="text-[11px] font-mono uppercase tracking-wider text-slate-600">
+                SaaS Security Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••••••"
-                className="w-full bg-[#000000] border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-400 transition"
+                className="w-full bg-white/80 border border-slate-300 rounded-2xl px-4 py-3 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition shadow-inner"
                 required
               />
             </div>
@@ -82,7 +84,7 @@ export default function CloudLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-full bg-white hover:bg-zinc-200 text-black text-xs font-mono font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer disabled:opacity-50"
+                className="w-full h-11 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-lg cursor-pointer disabled:opacity-50"
               >
                 <span>{loading ? "Connecting to Ingestion..." : "Sign In to Cloud SaaS"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -90,17 +92,19 @@ export default function CloudLoginPage() {
             </div>
           </form>
 
-          <div className="pt-2 border-t border-zinc-800 text-center">
-            <span className="text-[10px] font-mono text-zinc-400">
-              Zero raw telemetry received · All data pseudonymized at edge
+          <div className="pt-3 border-t border-slate-200 text-center">
+            <span className="text-[11px] font-mono text-slate-500 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600 inline" />
+              <span>Zero Raw Data Received • Metadata-Only Egress</span>
             </span>
           </div>
+
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="z-10 text-center text-[11px] text-zinc-500 font-mono py-2">
-        SEENIL Cloud SaaS · Ingestion Engine v2.4 · Real Telemetry
+      <footer className="z-10 max-w-5xl mx-auto w-full text-center py-4 text-xs text-slate-500 font-medium">
+        <span>SEENIL SaaS Tier 2 · Multi-Tenant SOC2 Verified</span>
       </footer>
     </div>
   );

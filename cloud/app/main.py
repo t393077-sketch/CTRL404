@@ -58,7 +58,7 @@ async def heartbeat_monitor_loop():
                     if hb_time.tzinfo is None:
                         hb_time = hb_time.replace(tzinfo=timezone.utc)
                     delta_s = int((now_utc - hb_time).total_seconds())
-                    reason = f"Collector offline: no heartbeat received for {delta_s}s (> 60s timeout threshold)"
+                    reason = f"Collector offline: no heartbeat received for {delta_s}s (> {settings.HEARTBEAT_TIMEOUT_SECONDS}s timeout threshold)"
                     col.status = "offline"
                     col.offline_reason = reason
 

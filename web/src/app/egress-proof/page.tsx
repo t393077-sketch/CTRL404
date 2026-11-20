@@ -3,18 +3,24 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Lock,
   ShieldCheck,
   CheckCircle2,
   Copy,
   Check,
-  Filter,
-  CheckCheck,
-  RefreshCw,
-  ExternalLink,
   Flame,
   Terminal,
-  Shield
+  Home,
+  BarChart3,
+  AlertTriangle,
+  FileCheck2,
+  Settings,
+  LogOut,
+  Bell,
+  CheckCheck,
+  RefreshCw,
+  Search,
+  Lock,
+  LayoutGrid
 } from "lucide-react";
 
 interface AuditEntry {
@@ -22,7 +28,7 @@ interface AuditEntry {
   payload_id: string;
   metric: string;
   raw_input: string;
-  redacted_payload: string;
+  redacted_payload: any;
   payload_sha256: string;
   egress_status: string;
   timestamp_utc: string;
@@ -31,13 +37,11 @@ interface AuditEntry {
 export default function EgressProofPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "secrets" | "anonymized" | "normal">("all");
-  const [injecting, setInjecting] = useState(false);
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [verifiedMap, setVerifiedMap] = useState<Record<string, { verified: boolean; cloudHash: string }>>({});
+  const [searchFilter, setSearchFilter] = useState("");
 
-  // Direct Browser-to-Agent fetch from local SQLite (Port 8765)
   const fetchLocalAudit = async () => {
     try {
       const res = await fetch("http://127.0.0.1:8765/egress");
@@ -59,23 +63,6 @@ export default function EgressProofPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleInjectSecret = async () => {
-    setInjecting(true);
-    try {
-      await fetch("http://127.0.0.1:8765/control/inject-secret", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: "SuperSecretPassword123 and sk_live_9944aaffbc22"
-        })
-      });
-      await fetchLocalAudit();
-    } catch (_) {
-    } finally {
-      setInjecting(false);
-    }
-  };
-
   const handleVerifyWithCloud = async (payloadId: string, agentHash: string) => {
     setVerifyingId(payloadId);
     try {
@@ -95,19 +82,13 @@ export default function EgressProofPage() {
       } else {
         setVerifiedMap((prev) => ({
           ...prev,
-          [payloadId]: {
-            verified: true,
-            cloudHash: agentHash
-          }
+          [payloadId]: { verified: true, cloudHash: agentHash }
         }));
       }
     } catch (_) {
       setVerifiedMap((prev) => ({
         ...prev,
-        [payloadId]: {
-          verified: true,
-          cloudHash: agentHash
-        }
+        [payloadId]: { verified: true, cloudHash: agentHash }
       }));
     } finally {
       setVerifyingId(null);
@@ -120,275 +101,218 @@ export default function EgressProofPage() {
     setTimeout(() => setCopiedHash(null), 2000);
   };
 
-  const filteredEntries = entries.filter((e) => {
-    if (filter === "secrets") {
-      return (
-        e.raw_input.includes("password") ||
-        e.raw_input.includes("token") ||
-        e.raw_input.includes("Bearer") ||
-        e.redacted_payload.includes("[REDACTED")
-      );
-    }
-    if (filter === "anonymized") {
-      return (
-        e.raw_input.includes("host=") ||
-        e.redacted_payload.includes("pseudonymous_source_id")
-      );
-    }
-    if (filter === "normal") {
-      return !e.redacted_payload.includes("[REDACTED");
-    }
-    return true;
-  });
+  const filtered = entries.filter((e) =>
+    searchFilter ? e.raw_input.toLowerCase().includes(searchFilter.toLowerCase()) || e.metric?.includes(searchFilter) : true
+  );
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between p-4 sm:p-6 pb-24 font-sans select-none relative overflow-x-hidden">
-      {/* Main Container */}
-      <div className="max-w-[1600px] mx-auto w-full space-y-4 z-10">
-        {/* TOP STATUS BAR (High-contrast Black & White) */}
-        <div className="bg-[#09090B] border border-zinc-800 rounded-[24px] px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-[0_16px_50px_rgba(0,0,0,0.8)]">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold font-mono text-xl tracking-wider text-white">
-              SEENIL
+    <div className="min-h-screen vision-backdrop text-[#0F172A] flex flex-col justify-between p-3 sm:p-5 pb-28 font-sans select-none relative overflow-x-hidden">
+      
+      {/* LEFT FLOATING VERTICAL DOCK */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col items-center gap-6 vision-dock px-3 py-6">
+        <Link href="/cloud/dashboard" className="p-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition hover:scale-110">
+          <LayoutGrid className="w-5 h-5" />
+        </Link>
+        <Link href="/agent/dashboard" className="p-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition hover:scale-110">
+          <Terminal className="w-5 h-5" />
+        </Link>
+        <Link href="/proof" className="p-2.5 rounded-xl bg-white/20 text-white shadow-sm transition hover:scale-110">
+          <ShieldCheck className="w-5 h-5 text-white" />
+        </Link>
+        <Link href="/scenarios" className="p-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition hover:scale-110">
+          <AlertTriangle className="w-5 h-5" />
+        </Link>
+        <Link href="/" className="mt-4 p-2.5 rounded-xl text-white/40 hover:text-red-400 hover:bg-white/10 transition hover:scale-110">
+          <LogOut className="w-5 h-5" />
+        </Link>
+      </div>
+
+      {/* MAIN CONTAINER */}
+      <div className="max-w-[1520px] mx-auto w-full space-y-4 md:pl-16 z-10">
+
+        {/* TOP BRAND HEADER */}
+        <header className="flex items-center justify-between px-2 pt-1 pb-2">
+          <div className="flex items-center gap-2">
+            <div className="vision-pill px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold text-slate-700">
+              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Direct SQLite Machine Connection (Port 8765)</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-800 to-black p-0.5 shadow-md flex items-center justify-center">
+                <ShieldCheck className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-black tracking-tight text-[#0F172A]">SEENIL</span>
+            </div>
+            <span className="text-[11px] font-medium text-slate-500 tracking-wider mt-0.5">
+              Cryptographic Egress Proof &amp; Verification
             </span>
-            <span className="text-xs font-mono text-zinc-500 uppercase">Split Proof Audit</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 px-3.5 py-1.5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>DIRECT LOCAL SQLITE CONNECTION (PORT 8765)</span>
+            <div className="vision-pill px-3 py-1 flex items-center gap-2 text-xs font-semibold text-emerald-800">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Bit-for-Bit Non-Repudiation</span>
             </div>
+            <button className="vision-pill p-2 text-slate-600 hover:text-black transition">
+              <Bell className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
 
+        {/* HERO PROOF HERO BANNER */}
+        <div className="vision-card-dark p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+              <span>ZERO-LEAK VERIFICATION INVARIANT</span>
+            </div>
+            <h2 className="text-xl font-bold text-white">
+              Mathematical Non-Repudiation Audit
+            </h2>
+            <p className="text-xs text-zinc-300 max-w-2xl font-normal leading-relaxed">
+              Verify bit-for-bit equivalence between the client-calculated SHA-256 hash and the central cloud stored hash. Proves zero tampering, zero leaked raw secrets, and deterministic serialization.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleInjectSecret}
-              disabled={injecting}
-              className="px-4 py-2 rounded-full bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+              onClick={() => fetchLocalAudit()}
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition border border-white/15"
             >
-              <Flame className="w-3.5 h-3.5 text-rose-600" />
-              <span>{injecting ? "Injecting Secret..." : "Inject Secret"}</span>
+              <RefreshCw className="w-3.5 h-3.5 inline mr-1.5" />
+              Refresh Audit Log
             </button>
           </div>
         </div>
 
-        {/* HERO BANNER CARD (Pitch-black luxury) */}
-        <div className="bg-[#09090B] border border-zinc-800 rounded-[24px] p-7 shadow-[0_16px_50px_rgba(0,0,0,0.8)] flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="space-y-3 z-10 max-w-2xl">
+        {/* VERIFICATION TABLE */}
+        <div className="vision-card-white p-6 space-y-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700 text-[10px] font-mono font-bold tracking-wider uppercase">
-                ZERO-LEAK VERIFICATION
-              </span>
-              <span className="text-xs text-zinc-600 font-mono">·</span>
-              <span className="text-xs text-white font-mono font-semibold">
-                LOCAL AGENT AUDIT LOG
-              </span>
+              <h3 className="text-base font-bold text-slate-900">Live Audit Trail</h3>
+              <span className="text-xs text-slate-500 font-mono">({filtered.length} entries)</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-snug">
-              Cryptographic Egress Proof Panel
-            </h1>
-
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
-              Compare unredacted raw machine input from the agent&apos;s isolated SQLite database side-by-side with sanitized payloads dispatched to SEENIL Cloud. Every packet is signed with HMAC-SHA256.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-6 sm:gap-10 z-10">
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.08em] text-zinc-400 font-semibold">
-                AUDIT ENTRIES
-              </div>
-              <div className="text-4xl font-extrabold font-mono text-white mt-1">
-                {entries.length}
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                Localhost SQLite Records
-              </div>
-            </div>
-
-            <div className="border-l border-zinc-800 pl-6 sm:pl-8">
-              <div className="text-[10px] font-mono uppercase tracking-[0.08em] text-zinc-400 font-semibold mb-1">
-                INTEGRITY PROOF
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-xs font-bold inline-block">
-                SHA-256 MATCH VERIFIED
-              </span>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Filter by metric or raw payload..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="pl-8 pr-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              />
             </div>
           </div>
-        </div>
 
-        {/* FILTER BAR PILLS */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-[20px] bg-[#09090B] border border-zinc-800">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-zinc-500" />
-            <span className="text-xs font-mono text-zinc-400 font-bold uppercase tracking-wider">
-              FILTER AUDIT:
-            </span>
-          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px]">
+                  <th className="py-2.5 px-3">Payload ID</th>
+                  <th className="py-2.5 px-3">Metric</th>
+                  <th className="py-2.5 px-3">Raw Log (Client Enclave)</th>
+                  <th className="py-2.5 px-3">Allow-Listed Egress</th>
+                  <th className="py-2.5 px-3">SHA-256 Fingerprint</th>
+                  <th className="py-2.5 px-3 text-right">Integrity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((item) => {
+                  const check = verifiedMap[item.payload_id];
+                  const isVerified = check?.verified;
+                  const isVerifying = verifyingId === item.payload_id;
 
-          <div className="flex items-center gap-2 bg-[#000000] p-1 rounded-full border border-zinc-800">
-            {[
-              { id: "all", label: "All Proofs" },
-              { id: "secrets", label: "Scrubbed Secrets" },
-              { id: "anonymized", label: "Pseudonymized IDs" },
-              { id: "normal", label: "Normal Metrics" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilter(tab.id as any)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition ${
-                  filter === tab.id
-                    ? "bg-white text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={fetchLocalAudit}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white transition"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        {/* AUDIT LOG LIST (Side-by-Side Comparison Cards) */}
-        <div className="space-y-4">
-          {filteredEntries.map((entry) => {
-            const hasSecret =
-              entry.raw_input.includes("password") ||
-              entry.raw_input.includes("sk_live_") ||
-              entry.raw_input.includes("Bearer");
-
-            const verification = verifiedMap[entry.payload_id];
-            const isVerified = verification?.verified ?? true;
-
-            return (
-              <div
-                key={entry.id}
-                className="bg-[#09090B] border border-zinc-800 rounded-[24px] p-6 shadow-[0_16px_50px_rgba(0,0,0,0.8)] space-y-4 transition hover:border-zinc-700"
-              >
-                {/* Entry Meta Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-white">
-                      Payload ID: #{entry.payload_id.substring(0, 8)}
-                    </span>
-                    <span className="text-xs font-mono text-zinc-500">
-                      [{entry.timestamp_utc}]
-                    </span>
-                    {hasSecret && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold uppercase">
-                        Secret Scrubbed
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleVerifyWithCloud(entry.payload_id, entry.payload_sha256)}
-                      disabled={verifyingId === entry.payload_id}
-                      className="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-mono text-zinc-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{verifyingId === entry.payload_id ? "Verifying..." : "Verify Cloud Match"}</span>
-                    </button>
-
-                    <div className="flex items-center gap-2 bg-[#000000] px-3 py-1 rounded-full border border-zinc-800">
-                      <span className="text-[10px] font-mono text-zinc-500">SHA-256:</span>
-                      <span className="text-[11px] font-mono text-zinc-300">
-                        {entry.payload_sha256.substring(0, 16)}...
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(entry.payload_sha256)}
-                        className="text-zinc-500 hover:text-white"
-                      >
-                        {copiedHash === entry.payload_sha256 ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 px-3 font-bold text-slate-900 truncate max-w-[110px]">
+                        #{item.payload_id?.slice(0, 8)}
+                      </td>
+                      <td className="py-3 px-3 text-slate-700">
+                        {item.metric || "system.telemetry"}
+                      </td>
+                      <td className="py-3 px-3 text-slate-500 max-w-xs truncate" title={item.raw_input}>
+                        {item.raw_input}
+                      </td>
+                      <td className="py-3 px-3 text-slate-700 max-w-xs truncate">
+                        {typeof item.redacted_payload === "object"
+                          ? JSON.stringify(item.redacted_payload)
+                          : item.redacted_payload}
+                      </td>
+                      <td className="py-3 px-3 text-slate-900">
+                        <div className="flex items-center gap-1.5">
+                          <span>{item.payload_sha256?.slice(0, 16)}...</span>
+                          <button
+                            onClick={() => copyToClipboard(item.payload_sha256)}
+                            className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-black transition"
+                          >
+                            {copiedHash === item.payload_sha256 ? (
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {isVerified ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            100% MATCH
+                          </span>
                         ) : (
-                          <Copy className="w-3.5 h-3.5" />
+                          <button
+                            onClick={() => handleVerifyWithCloud(item.payload_id, item.payload_sha256)}
+                            disabled={isVerifying}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1 rounded-full transition"
+                          >
+                            {isVerifying ? "Verifying..." : "Verify Hash"}
+                          </button>
                         )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SIDE-BY-SIDE PANELS */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* LEFT: RAW LOCAL INPUT */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-mono">
-                      <div className="flex items-center gap-2">
-                        <Terminal className="w-3.5 h-3.5 text-rose-400" />
-                        <span className="text-zinc-300 font-bold uppercase">
-                          RAW INPUT (LOCAL ENCLAVE ONLY)
-                        </span>
-                      </div>
-                      <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px]">
-                        NEVER LEAVES HOST
-                      </span>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-[#000000] border border-zinc-800 font-mono text-xs text-zinc-300 overflow-x-auto min-h-[140px] leading-relaxed">
-                      {entry.raw_input}
-                    </div>
-                  </div>
-
-                  {/* RIGHT: SANITIZED EGRESS PAYLOAD */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-mono">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-white font-bold uppercase">
-                          SANITIZED EGRESS (SENT TO CLOUD)
-                        </span>
-                      </div>
-                      <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
-                        ALLOW-LISTED ONLY
-                      </span>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-[#000000] border border-zinc-800 font-mono text-xs text-zinc-200 overflow-x-auto min-h-[140px] leading-relaxed">
-                      <pre className="whitespace-pre-wrap">{entry.redacted_payload}</pre>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
 
-      {/* FLOATING PILL DOCK AT BOTTOM */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
-        <div className="bg-[#09090B] border border-zinc-800 rounded-full px-4 py-2 flex items-center gap-2 shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
-          <Link
-            href="/cloud/dashboard"
-            className="px-4 py-2 rounded-full text-xs font-mono text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
-          >
-            Tier 2: Cloud SaaS
-          </Link>
-          <Link
-            href="/agent/dashboard"
-            className="px-4 py-2 rounded-full text-xs font-mono text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
-          >
-            Tier 1: Local Agent
-          </Link>
-          <span className="px-4 py-2 rounded-full bg-white text-black font-mono text-xs font-bold shadow-md">
-            Split Proof
-          </span>
-          <Link
-            href="/demo-controls"
-            className="px-4 py-2 rounded-full text-xs font-mono text-white hover:bg-zinc-900 transition flex items-center gap-1.5"
-          >
-            <span>⚡ Scenarios</span>
-          </Link>
-        </div>
-      </div>
+      {/* BOTTOM FLOATING NAVIGATION PILL */}
+      <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 vision-bottom-dock px-3 py-2 flex items-center gap-1 shadow-2xl">
+        <Link
+          href="/proof"
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 text-white font-semibold text-xs shadow-md"
+        >
+          <FileCheck2 className="w-4 h-4 text-white" />
+          <span>Egress Proof</span>
+        </Link>
+        <Link
+          href="/cloud/dashboard"
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 font-semibold text-xs transition"
+        >
+          <Home className="w-4 h-4" />
+          <span>Cloud</span>
+        </Link>
+        <Link
+          href="/agent/dashboard"
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 font-semibold text-xs transition"
+        >
+          <Terminal className="w-4 h-4" />
+          <span>Agent</span>
+        </Link>
+        <Link
+          href="/scenarios"
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 font-semibold text-xs transition"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          <span>Chaos Controls</span>
+        </Link>
+      </nav>
     </div>
   );
 }

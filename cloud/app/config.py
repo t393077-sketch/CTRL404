@@ -31,8 +31,8 @@ class Settings:
         return os.getenv("POSTGRES_DB", "seenil")
 
     SCHEMA_FILE: Path = SCHEMA_PATH
-    HEARTBEAT_TIMEOUT_SECONDS: int = 60
-    HEARTBEAT_CHECK_INTERVAL_SECONDS: int = 10
+    HEARTBEAT_TIMEOUT_SECONDS: int = 45
+    HEARTBEAT_CHECK_INTERVAL_SECONDS: int = 3
     STALE_DATA_TIMEOUT_SECONDS: int = 30
 
 settings = Settings()

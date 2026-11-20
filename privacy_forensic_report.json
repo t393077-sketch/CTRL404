@@ -1,0 +1,119 @@
+{
+  "1": {
+    "title": "Inject Fake Sensitive Values into Local Input",
+    "status": "PASS",
+    "evidence": {
+      "Canary Count": 5,
+      "Raw String Injected": "[AUTH_EVENT] host=srv-core-internal user=sec_admin password=FakePass_998877_XyZ! apiKey=sk-live-cana...",
+      "Canaries Confirmed Present": true
+    }
+  },
+  "2": {
+    "title": "Inspect Local Raw Input",
+    "status": "PASS",
+    "evidence": {
+      "Encoding": "UTF-8",
+      "Byte Length": "302 bytes",
+      "Storage Policy": "Local SQLite audit_log only (Never leaves customer machine)",
+      "Canary Password Present": true,
+      "Canary API Key Present": true,
+      "Canary Email Present": true,
+      "Canary IP Present": true,
+      "Canary Token Present": true
+    }
+  },
+  "3": {
+    "title": "Inspect Sanitized Payload After Redaction",
+    "status": "PASS",
+    "evidence": {
+      "Redaction Engine Triggered": true,
+      "Sanitized Output": "[AUTH_EVENT] host=srv-core-internal user=sec_admin password=[REDACTED:PASSWORD] apiKey=[REDACTED:API_KEY] contact=[REDACTED:EMAIL] client_ip=[REDACTED:IP] session_token=[REDACTED:TOKEN] status=fail...",
+      "Canary Leaks in Sanitized String": 0,
+      "Tags Injected": "[REDACTED:PASSWORD], [REDACTED:API_KEY], [REDACTED:EMAIL], [REDACTED:IP], [REDACTED:TOKEN]",
+      "All Tags Verified": true
+    }
+  },
+  "4": {
+    "title": "Inspect Exact Serialized Payload Sent Over Network",
+    "status": "PASS",
+    "evidence": {
+      "Wire Serialization Format": "JSON separators=(',', ':') (Deterministic Canonical Bytes)",
+      "Wire Byte Length": "513 bytes",
+      "Wire Payload SHA-256": "ed91bf740f8fbd2dab2ca0cb3e023b559d3dedcb210a6f366457679c7a6d375a",
+      "HMAC-SHA256 Signature Header": "1cbd7f82187b304fdb4993f3be7629a8904b7eb944377cf91ed3dd8a75c20e43",
+      "Pseudonymous Source ID": "node_40b9c8e26f984f20",
+      "Canary Leaks in Wire Bytes": 0
+    }
+  },
+  "5": {
+    "title": "Inspect What Cloud Actually Receives and Stores",
+    "status": "PASS",
+    "evidence": {
+      "Cloud Ingest Status Code": 200,
+      "Ingest Latency Measured": "107.91 ms",
+      "Stored Payload ID": "3a0087fa-e424-4f23-84dc-c8cf67e8f93a",
+      "Stored Source ID (Pseudonymous)": "node_40b9c8e26f984f20",
+      "Stored Alert Context": "[AUTH_EVENT] host=srv-core-internal user=sec_admin password=[REDACTED:PASSWORD] apiKey=[RE...",
+      "Stored Payload SHA-256": "ed91bf740f8fbd2dab2ca0cb3e023b559d3dedcb210a6f366457679c7a6d375a",
+      "Canary Leaks in Cloud Database Row": 0
+    }
+  },
+  "6": {
+    "title": "Deep Forensic Search of Cloud Storage/DB on Disk",
+    "status": "PASS",
+    "evidence": {
+      "Database File Scanned": "C:\\Users\\shubh\\.gemini\\antigravity\\scratch\\seenil\\cloud\\seenil.db",
+      "Total DB File Size Scanned": "1,007,616 bytes",
+      "Raw Binary Search Results": {
+        "FakePass_998877_Xy...": "0 occurrences",
+        "sk-live-canary-001...": "0 occurrences",
+        "forensic.auditor.t...": "0 occurrences",
+        "198.51.100.42...": "0 occurrences",
+        "ghp_FakeGitHubCana...": "0 occurrences"
+      },
+      "Total Canary Secrets Found in Cloud DB": 0,
+      "Zero-Exposure Invariant Held": true
+    }
+  },
+  "7": {
+    "title": "Verify SHA-256 Fingerprint Matches Correct Payload Bytes",
+    "status": "PASS",
+    "evidence": {
+      "Local Agent Audit Table SHA-256": "ed91bf740f8fbd2dab2ca0cb3e023b559d3dedcb210a6f366457679c7a6d375a",
+      "Computed Wire Bytes SHA-256": "ed91bf740f8fbd2dab2ca0cb3e023b559d3dedcb210a6f366457679c7a6d375a",
+      "Cloud Stored SHA-256": "ed91bf740f8fbd2dab2ca0cb3e023b559d3dedcb210a6f366457679c7a6d375a",
+      "Cryptographic Fingerprint Match": "EXACT 64-CHAR HEX MATCH",
+      "Bit-for-Bit Hash Integrity": true
+    }
+  },
+  "8": {
+    "title": "Verify HMAC Request Verification Against Actual Request",
+    "status": "PASS",
+    "evidence": {
+      "Signer Function": "HMAC-SHA256(tenant_secret, canonical_wire_bytes)",
+      "Verified Tenant ID": "tenant_alpha",
+      "Key Matching Secret In Database": true,
+      "Timing-Safe Compare Invariant": "hmac.compare_digest() passed"
+    }
+  },
+  "9": {
+    "title": "Verify That a Tampered Payload is Rejected",
+    "status": "PASS",
+    "evidence": {
+      "Tampering Executed": "Flipped byte: \"value\":1.0 -> \"value\":9.0",
+      "Transmitted Signature": "1cbd7f82187b304fdb4993f3be7629a8904b7eb944377cf91ed3dd8a75c20e43",
+      "Cloud Ingest Response Code": "HTTP 403 FORBIDDEN",
+      "Cloud Error Detail": "HMAC signature verification failed.",
+      "Tampering Defeated": true
+    }
+  },
+  "10": {
+    "title": "Verify That Requests With Invalid Credentials Are Rejected",
+    "status": "PASS",
+    "evidence": {
+      "Bad Token Attempt Status": "HTTP 401 UNAUTHORIZED (Invalid or deactivated agent token.)",
+      "Missing Token Attempt Status": "HTTP 401 UNAUTHORIZED (Missing 'X-Agent-Token' header.)",
+      "Authentication Perimeter Held": true
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "heartbeat_timeout_seconds": 45,
+  "watchdog_poll_interval_seconds": 3,
+  "target_threshold_seconds": 60.0,
+  "target_met": true,
+  "average_total_detection_time_s": 47.2,
+  "average_watchdog_poll_latency_s": 2.2,
+  "trials": [
+    {
+      "trial": 1,
+      "probe_id": "probe_bench_0_870515",
+      "poll_latency_s": 2.88,
+      "total_detection_time_s": 47.88,
+      "reason": "Collector offline: no heartbeat received for 47s (> 45s timeout threshold)"
+    },
+    {
+      "trial": 2,
+      "probe_id": "probe_bench_1_d4ee2d",
+      "poll_latency_s": 1.86,
+      "total_detection_time_s": 46.86,
+      "reason": "Collector offline: no heartbeat received for 46s (> 45s timeout threshold)"
+    },
+    {
+      "trial": 3,
+      "probe_id": "probe_bench_2_ba0603",
+      "poll_latency_s": 1.86,
+      "total_detection_time_s": 46.86,
+      "reason": "Collector offline: no heartbeat received for 46s (> 45s timeout threshold)"
+    }
+  ]
+}

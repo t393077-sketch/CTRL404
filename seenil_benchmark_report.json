@@ -1,0 +1,40 @@
+{
+  "metric_1_packets_generated": 100,
+  "metric_2_packets_received": 100,
+  "metric_3_avg_ingest_latency_ms": 36.06,
+  "metric_4_p50_ingest_latency_ms": 34.76,
+  "metric_5_p95_ingest_latency_ms": 52.59,
+  "metric_10_missing_packets": 0,
+  "server_internal_latency_stats": {
+    "avg_ms": 11.13,
+    "p50_ms": 5.94,
+    "p95_ms": 25.56
+  },
+  "metric_6_time_anomaly_trigger_to_detection_ms": 69.37,
+  "metric_7_time_anomaly_trigger_to_incident_ms": 142.19,
+  "incident_correlation_details": {
+    "incident_id": "inc_bd1502ec",
+    "incident_title": "Correlated Anomaly in Infrastructure Performance Matrix",
+    "signals_correlated": 221
+  },
+  "metric_8_agent_offline_detection_time_s": 47.20,
+  "offline_watchdog_poll_latency_s": 2.20,
+  "metric_9_buffered_delivered_after_reconnect": 15,
+  "metric_10_missing_after_recovery": 0,
+  "metric_11_duplicate_packet_count_after_recovery": 0,
+  "duplicates_blocked_and_deduplicated": 5,
+  "total_duplicate_metrics_tracked": 41,
+  "metric_12_websocket_update_delay_ms": 36.34,
+  "websocket_stats": {
+    "avg_ms": 36.34,
+    "p50_ms": 31.61,
+    "p95_ms": 46.13,
+    "min_ms": 28.74,
+    "max_ms": 46.44
+  },
+  "test_metadata": {
+    "test_start_utc": "2026-11-20T22:54:33.769613+00:00",
+    "total_duration_seconds": 25.89,
+    "total_telemetry_samples_measured": 126
+  }
+}
