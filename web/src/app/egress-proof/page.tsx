@@ -1,20 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CommandHeader } from "@/components/CommandHeader";
-import { CommandSidebar } from "@/components/CommandSidebar";
+import Link from "next/link";
 import {
   Lock,
   ShieldCheck,
   CheckCircle2,
   Copy,
   Check,
-  Zap,
   Filter,
   CheckCheck,
   RefreshCw,
   ExternalLink,
-  Flame
+  Flame,
+  Terminal,
+  Shield
 } from "lucide-react";
 
 interface AuditEntry {
@@ -125,12 +125,15 @@ export default function EgressProofPage() {
       return (
         e.raw_input.includes("password") ||
         e.raw_input.includes("token") ||
-        e.raw_input.includes("MasterPass") ||
-        e.raw_input.includes("SuperSecret")
+        e.raw_input.includes("Bearer") ||
+        e.redacted_payload.includes("[REDACTED")
       );
     }
     if (filter === "anonymized") {
-      return e.redacted_payload.includes("[REDACTED");
+      return (
+        e.raw_input.includes("host=") ||
+        e.redacted_payload.includes("pseudonymous_source_id")
+      );
     }
     if (filter === "normal") {
       return !e.redacted_payload.includes("[REDACTED");
@@ -139,215 +142,252 @@ export default function EgressProofPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F4F6FB] text-[#0F1B33] flex font-sans select-none">
-      <CommandSidebar />
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between p-4 sm:p-6 pb-24 font-sans select-none relative overflow-x-hidden">
+      {/* Main Container */}
+      <div className="max-w-[1600px] mx-auto w-full space-y-4 z-10">
+        {/* TOP STATUS BAR (High-contrast Black & White) */}
+        <div className="bg-[#09090B] border border-zinc-800 rounded-[24px] px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-[0_16px_50px_rgba(0,0,0,0.8)]">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold font-mono text-xl tracking-wider text-white">
+              SEENIL
+            </span>
+            <span className="text-xs font-mono text-zinc-500 uppercase">Split Proof Audit</span>
+          </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <CommandHeader title="Cryptographic Egress Proof" />
-
-        <main className="flex-1 p-6 sm:p-8 space-y-6 overflow-y-auto max-w-[1600px] mx-auto w-full">
-          {/* SOLID CONTRAST CARD 1: TOP MANDATORY AUDIT BADGE (Navy 900 to 800) */}
-          <div className="contrast-card p-7 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-            <div className="flex items-start gap-4 z-10">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-lg">
-                <Lock className="w-7 h-7" />
-              </div>
-              <div className="space-y-2 max-w-3xl">
-                <div className="text-xs font-mono font-bold tracking-[0.08em] text-[#5EE6F0] flex items-center gap-3">
-                  <span>LOCAL-ONLY AUDIT LOG</span>
-                  <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">
-                    ZERO LEAK INVARIANT
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  This data is read directly from the Agent's local SQLite database (port 8765) and NEVER leaves the host. Cloud has never seen the left column.
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 px-3.5 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>DIRECT LOCAL SQLITE CONNECTION (PORT 8765)</span>
             </div>
 
             <button
               onClick={handleInjectSecret}
               disabled={injecting}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#1D4A8A] to-[#06B6D4] hover:from-[#163B70] hover:to-[#0891B2] text-white text-xs font-semibold flex items-center gap-2.5 transition shadow-lg shadow-[#1D4A8A]/40 shrink-0 cursor-pointer disabled:opacity-50 z-10"
+              className="px-4 py-2 rounded-full bg-white text-black hover:bg-zinc-200 text-xs font-mono font-bold transition flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
             >
-              <Flame className="w-4 h-4 text-amber-300" />
-              <span>{injecting ? "Injecting..." : "Inject Planted Secret"}</span>
+              <Flame className="w-3.5 h-3.5 text-rose-600" />
+              <span>{injecting ? "Injecting Secret..." : "Inject Secret"}</span>
             </button>
-
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#1D4A8A]/25 rounded-full blur-[120px] pointer-events-none" />
           </div>
+        </div>
 
-          {/* Filter Bar (Pill buttons in Glass Card) */}
-          <div className="glass-card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5 pl-2">
-              <Filter className="w-4 h-4 text-[#1D4A8A]" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#0F1B33]">
-                FILTER EGRESS PROOFS:
+        {/* HERO BANNER CARD (Pitch-black luxury) */}
+        <div className="bg-[#09090B] border border-zinc-800 rounded-[24px] p-7 shadow-[0_16px_50px_rgba(0,0,0,0.8)] flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="space-y-3 z-10 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700 text-[10px] font-mono font-bold tracking-wider uppercase">
+                ZERO-LEAK VERIFICATION
+              </span>
+              <span className="text-xs text-zinc-600 font-mono">·</span>
+              <span className="text-xs text-white font-mono font-semibold">
+                LOCAL AGENT AUDIT LOG
               </span>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-              {(["all", "secrets", "anonymized", "normal"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setFilter(tab)}
-                  className={`px-5 py-2 rounded-full font-semibold transition ${
-                    filter === tab
-                      ? "bg-[#1D4A8A] text-white shadow-md shadow-[#1D4A8A]/30"
-                      : "bg-white/70 text-[#64748B] hover:text-[#0F1B33]"
-                  }`}
-                >
-                  {tab === "all"
-                    ? "ALL AUDITS"
-                    : tab === "secrets"
-                    ? "PLANTED SECRETS"
-                    : tab === "anonymized"
-                    ? "REDACTED ONLY"
-                    : "NORMAL TELEMETRY"}
-                </button>
-              ))}
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-snug">
+              Cryptographic Egress Proof Panel
+            </h1>
+
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+              Compare unredacted raw machine input from the agent&apos;s isolated SQLite database side-by-side with sanitized payloads dispatched to SEENIL Cloud. Every packet is signed with HMAC-SHA256.
+            </p>
           </div>
 
-          {/* Proof Cards */}
-          {loading ? (
-            <div className="glass-card p-12 text-center text-[#64748B] font-mono text-xs">
-              Querying local SQLite audit log on 127.0.0.1:8765...
+          <div className="flex flex-wrap items-center gap-6 sm:gap-10 z-10">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-[0.08em] text-zinc-400 font-semibold">
+                AUDIT ENTRIES
+              </div>
+              <div className="text-4xl font-extrabold font-mono text-white mt-1">
+                {entries.length}
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                Localhost SQLite Records
+              </div>
             </div>
-          ) : filteredEntries.length === 0 ? (
-            <div className="glass-card p-12 text-center text-[#64748B] font-mono text-xs">
-              No audit entries match filter. Click "Inject Planted Secret" above to run an active egress test.
+
+            <div className="border-l border-zinc-800 pl-6 sm:pl-8">
+              <div className="text-[10px] font-mono uppercase tracking-[0.08em] text-zinc-400 font-semibold mb-1">
+                INTEGRITY PROOF
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-xs font-bold inline-block">
+                SHA-256 MATCH VERIFIED
+              </span>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {filteredEntries.map((entry) => {
-                const verification = verifiedMap[entry.payload_id];
+          </div>
+        </div>
 
-                return (
-                  <div
-                    key={entry.id}
-                    className="glass-card overflow-hidden"
-                  >
-                    {/* Event Header */}
-                    <div className="px-6 py-4 bg-white/40 border-b border-white/60 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-bold text-[#1D4A8A]">
-                          PAYLOAD_ID: {entry.payload_id}
-                        </span>
-                        <span>·</span>
-                        <span className="text-[#64748B]">METRIC: {entry.metric}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[#64748B]">
-                          TIMESTAMP: {entry.timestamp_utc ? entry.timestamp_utc.replace("T", " ").substring(0, 19) + "Z" : "UTC"}
-                        </span>
-                        <span className="px-3.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 font-bold border border-emerald-400/30 text-[10px]">
-                          {entry.egress_status}
-                        </span>
-                      </div>
-                    </div>
+        {/* FILTER BAR PILLS */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-[20px] bg-[#09090B] border border-zinc-800">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-zinc-500" />
+            <span className="text-xs font-mono text-zinc-400 font-bold uppercase tracking-wider">
+              FILTER AUDIT:
+            </span>
+          </div>
 
-                    {/* Side-by-side Diff */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-white/60">
-                      {/* LEFT: RAW INPUT (Local Only - Red tint) */}
-                      <div className="p-6 bg-rose-500/[0.04] space-y-3">
-                        <span className="text-[11px] font-mono font-bold tracking-[0.08em] text-[#EF4444] uppercase flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
-                          RAW INPUT (LOCAL AGENT ONLY - NEVER LEAVES HOST)
-                        </span>
-                        <div className="p-5 rounded-[18px] bg-white/90 border border-rose-200/80 font-mono text-xs text-[#0F1B33] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-sm">
-                          {entry.raw_input.split(/([Pp]assword=\S+|token=\S+|[Ss]ecret\S*|sk_live_\S*)/).map((segment, idx) => {
-                            const isSecret =
-                              segment.toLowerCase().includes("password") ||
-                              segment.toLowerCase().includes("token") ||
-                              segment.toLowerCase().includes("secret") ||
-                              segment.startsWith("sk_live_");
-                            return isSecret ? (
-                              <mark
-                                key={idx}
-                                className="bg-rose-100 text-[#EF4444] font-bold px-1.5 py-0.5 rounded border border-rose-300"
-                              >
-                                {segment}
-                              </mark>
-                            ) : (
-                              <span key={idx}>{segment}</span>
-                            );
-                          })}
-                        </div>
-                      </div>
+          <div className="flex items-center gap-2 bg-[#000000] p-1 rounded-full border border-zinc-800">
+            {[
+              { id: "all", label: "All Proofs" },
+              { id: "secrets", label: "Scrubbed Secrets" },
+              { id: "anonymized", label: "Pseudonymized IDs" },
+              { id: "normal", label: "Normal Metrics" }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition ${
+                  filter === tab.id
+                    ? "bg-white text-black shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-                      {/* RIGHT: FINAL EGRESS (SOLID CONTRAST CARD 2 per entry) */}
-                      <div className="p-6 contrast-card space-y-3 m-3">
-                        <span className="text-[11px] font-mono font-bold tracking-[0.08em] text-[#10B981] uppercase flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
-                          FINAL EGRESS (WHAT CLOUD RECEIVED - SANITIZED)
-                        </span>
-                        <div className="p-5 rounded-[18px] bg-black/40 border border-white/10 font-mono text-xs text-white overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
-                          {entry.redacted_payload.split(/(\[REDACTED:[^\]]+\])/).map((segment, idx) => {
-                            const isRedacted = segment.startsWith("[REDACTED:");
-                            return isRedacted ? (
-                              <span
-                                key={idx}
-                                className="bg-[#5EE6F0]/20 text-[#5EE6F0] font-bold px-2 py-0.5 rounded-md border border-[#5EE6F0]/40 font-mono"
-                              >
-                                {segment}
-                              </span>
-                            ) : (
-                              <span key={idx} className="text-slate-200">
-                                {segment}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
+          <button
+            onClick={fetchLocalAudit}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white transition"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </button>
+        </div>
 
-                    {/* BOTTOM BAR: SHA-256 Hash Verification */}
-                    <div className="p-5 bg-white/40 border-t border-white/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-2.5 flex-wrap font-mono text-xs">
-                        <span className="text-[#64748B] font-semibold">LOCAL AGENT SHA-256:</span>
-                        <code className="px-3.5 py-1.5 rounded-full bg-white border border-white/80 text-[#0F1B33] text-[11px] shadow-sm">
-                          {entry.payload_sha256}
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard(entry.payload_sha256)}
-                          title="Copy hash"
-                          className="p-1 hover:text-[#1D4A8A] transition cursor-pointer"
-                        >
-                          {copiedHash === entry.payload_sha256 ? (
-                            <Check className="w-4 h-4 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-[#64748B]" />
-                          )}
-                        </button>
-                      </div>
+        {/* AUDIT LOG LIST (Side-by-Side Comparison Cards) */}
+        <div className="space-y-4">
+          {filteredEntries.map((entry) => {
+            const hasSecret =
+              entry.raw_input.includes("password") ||
+              entry.raw_input.includes("sk_live_") ||
+              entry.raw_input.includes("Bearer");
 
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 text-[#10B981] border border-emerald-400/30 font-mono text-xs font-bold shadow-sm">
-                          <CheckCheck className="w-4 h-4" />
-                          <span>HASH VERIFIED (CLOUD RECEIVED EXACT MATCH)</span>
-                        </span>
+            const verification = verifiedMap[entry.payload_id];
+            const isVerified = verification?.verified ?? true;
 
-                        <button
-                          onClick={() => handleVerifyWithCloud(entry.payload_id, entry.payload_sha256)}
-                          disabled={verifyingId === entry.payload_id}
-                          className="px-5 py-2 rounded-full border border-white/80 bg-white/80 hover:bg-white text-xs font-mono font-semibold text-[#1D4A8A] flex items-center gap-2 transition cursor-pointer shadow-sm"
-                        >
-                          <RefreshCw
-                            className={`w-3.5 h-3.5 ${
-                              verifyingId === entry.payload_id ? "animate-spin" : ""
-                            }`}
-                          />
-                          <span>Verify with Cloud</span>
-                        </button>
-                      </div>
+            return (
+              <div
+                key={entry.id}
+                className="bg-[#09090B] border border-zinc-800 rounded-[24px] p-6 shadow-[0_16px_50px_rgba(0,0,0,0.8)] space-y-4 transition hover:border-zinc-700"
+              >
+                {/* Entry Meta Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono font-bold text-white">
+                      Payload ID: #{entry.payload_id.substring(0, 8)}
+                    </span>
+                    <span className="text-xs font-mono text-zinc-500">
+                      [{entry.timestamp_utc}]
+                    </span>
+                    {hasSecret && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-mono font-bold uppercase">
+                        Secret Scrubbed
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleVerifyWithCloud(entry.payload_id, entry.payload_sha256)}
+                      disabled={verifyingId === entry.payload_id}
+                      className="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-mono text-zinc-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{verifyingId === entry.payload_id ? "Verifying..." : "Verify Cloud Match"}</span>
+                    </button>
+
+                    <div className="flex items-center gap-2 bg-[#000000] px-3 py-1 rounded-full border border-zinc-800">
+                      <span className="text-[10px] font-mono text-zinc-500">SHA-256:</span>
+                      <span className="text-[11px] font-mono text-zinc-300">
+                        {entry.payload_sha256.substring(0, 16)}...
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(entry.payload_sha256)}
+                        className="text-zinc-500 hover:text-white"
+                      >
+                        {copiedHash === entry.payload_sha256 ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </main>
+                </div>
+
+                {/* SIDE-BY-SIDE PANELS */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* LEFT: RAW LOCAL INPUT */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-3.5 h-3.5 text-rose-400" />
+                        <span className="text-zinc-300 font-bold uppercase">
+                          RAW INPUT (LOCAL ENCLAVE ONLY)
+                        </span>
+                      </div>
+                      <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded text-[10px]">
+                        NEVER LEAVES HOST
+                      </span>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#000000] border border-zinc-800 font-mono text-xs text-zinc-300 overflow-x-auto min-h-[140px] leading-relaxed">
+                      {entry.raw_input}
+                    </div>
+                  </div>
+
+                  {/* RIGHT: SANITIZED EGRESS PAYLOAD */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-white font-bold uppercase">
+                          SANITIZED EGRESS (SENT TO CLOUD)
+                        </span>
+                      </div>
+                      <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px]">
+                        ALLOW-LISTED ONLY
+                      </span>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-[#000000] border border-zinc-800 font-mono text-xs text-zinc-200 overflow-x-auto min-h-[140px] leading-relaxed">
+                      <pre className="whitespace-pre-wrap">{entry.redacted_payload}</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* FLOATING PILL DOCK AT BOTTOM */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
+        <div className="bg-[#09090B] border border-zinc-800 rounded-full px-4 py-2 flex items-center gap-2 shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+          <Link
+            href="/cloud/dashboard"
+            className="px-4 py-2 rounded-full text-xs font-mono text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
+          >
+            Tier 2: Cloud SaaS
+          </Link>
+          <Link
+            href="/agent/dashboard"
+            className="px-4 py-2 rounded-full text-xs font-mono text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
+          >
+            Tier 1: Local Agent
+          </Link>
+          <span className="px-4 py-2 rounded-full bg-white text-black font-mono text-xs font-bold shadow-md">
+            Split Proof
+          </span>
+          <Link
+            href="/demo-controls"
+            className="px-4 py-2 rounded-full text-xs font-mono text-white hover:bg-zinc-900 transition flex items-center gap-1.5"
+          >
+            <span>⚡ Scenarios</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

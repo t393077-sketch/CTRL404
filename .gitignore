@@ -26,11 +26,14 @@ htmlcov/
 .pytest_cache/
 
 # Databases & local state
+*.db
 *.sqlite
 *.sqlite3
 *.db-journal
 cloud/seenil.db
 agent/agent.db
+agent/src/storage/*.db
+audit_results.json
 
 # Logs
 *.log
