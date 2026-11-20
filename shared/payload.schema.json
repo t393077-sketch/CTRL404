@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SeenilPayload",
+  "description": "SEENIL allow-listed metadata-only telemetry schema. Any unexpected fields are strictly rejected.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "payload_id",
+    "tenant_id",
+    "source_id",
+    "metric",
+    "value",
+    "event_time_utc",
+    "source_tz",
+    "health",
+    "category",
+    "severity",
+    "alert_context"
+  ],
+  "properties": {
+    "payload_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for idempotency and deduplication (UUID v4)"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Target tenant identifier for multi-tenant isolation"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Pseudonymous HMAC-hashed source/collector identifier"
+    },
+    "metric": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Telemetry metric identifier (e.g. system.cpu.utilization, network.latency.rtt)"
+    },
+    "value": {
+      "type": "number",
+      "description": "Observed numeric metric value"
+    },
+    "event_time_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp of the event in ISO 8601 format"
+    },
+    "source_tz": {
+      "type": "string",
+      "description": "Source origin timezone string (e.g. Asia/Kolkata, UTC)"
+    },
+    "health": {
+      "type": "string",
+      "enum": ["Excellent", "Good", "Fair", "Poor"],
+      "description": "Four-state health classification"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["infrastructure", "network", "application", "security"],
+      "description": "Observed domain category"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warning", "critical", "error"],
+      "description": "Event severity tier"
+    },
+    "alert_context": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Concise non-sensitive alert context description (strictly max 200 chars)"
+    }
+  }
+}
