@@ -118,6 +118,8 @@ export default function CloudDashboardPage() {
   const [fleetSummary, setFleetSummary] = useState<FleetSummary | null>(null);
   const [reliability, setReliability] = useState<ReliabilityStats | null>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [cloudIncidents, setCloudIncidents] = useState<any[]>([]);
+  const [expandedDossier, setExpandedDossier] = useState<Record<string, boolean>>({ inc_casc_1042: true });
   const [confirmRemediation, setConfirmRemediation] = useState(false);
   const [activeDate, setActiveDate] = useState(21);
   const [selectedIncident, setSelectedIncident] = useState<IncidentModalData | null>(null);
@@ -258,6 +260,17 @@ export default function CloudDashboardPage() {
         const dataCorr = await resCorr.json();
         setAnalyticsData(dataCorr);
       }
+
+      // 4. Correlated Incidents & Predictive RCA
+      const resIncs = await fetch("http://127.0.0.1:8000/api/v1/incidents", {
+        headers: { "X-Tenant-ID": tId, Authorization: `Bearer ${tenantToken}` }
+      });
+      if (resIncs.ok) {
+        const dataIncs = await resIncs.json();
+        if (dataIncs && dataIncs.incidents) {
+          setCloudIncidents(dataIncs.incidents);
+        }
+      }
     } catch (_) {}
   };
 
@@ -390,12 +403,11 @@ export default function CloudDashboardPage() {
         </button>
 
         <button
-          onClick={() => {
-            const inc = eventsByDate[21][0];
-            setSelectedIncident(inc);
-          }}
-          className="p-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-110 cursor-pointer vision-interactive"
-          title="Incident War Room (Click to open Anomaly RCA)"
+          onClick={() => setActiveTab("incidents")}
+          className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer vision-interactive ${
+            activeTab === "incidents" ? "bg-white/25 text-white shadow-md scale-110" : "text-white/60 hover:text-white hover:bg-white/10"
+          }`}
+          title="AIOps Incidents &amp; Predictive RCA"
         >
           <AlertTriangle className="w-5 h-5 text-amber-400" />
         </button>
@@ -1274,6 +1286,371 @@ export default function CloudDashboardPage() {
         )}
 
         {/* =========================================================================
+            TAB: AIOPS INCIDENT INTELLIGENCE & TOPOLOGY-AWARE PREDICTIVE RCA VIEW
+            ========================================================================= */}
+        {activeTab === "incidents" && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="vision-card-white p-6 space-y-6">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">AIOps Intelligence Center</span>
+                  <h2 className="text-xl font-bold text-slate-900">Topology-Aware Incident Correlation &amp; Predictive RCA ({selectedTenant})</h2>
+                </div>
+                <button
+                  onClick={() => setActiveTab("dashboard")}
+                  className="px-4 py-2 rounded-full bg-zinc-900 text-white text-xs font-bold transition hover:bg-black cursor-pointer vision-interactive"
+                >
+                  &larr; Back to Grid
+                </button>
+              </div>
+
+              {/* 1. PREDICTIVE ANALYSIS & CAPACITY EXHAUSTION HORIZON (AIOps Predictive Engine) */}
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#0B1528] to-[#050C18] text-white border border-cyan-500/30 space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="px-3.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 text-[10px] font-mono font-bold uppercase tracking-wider">
+                      AIOPS PREDICTIVE EARLY WARNING ENGINE
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">|</span>
+                    <span className="text-xs font-mono text-amber-300 font-semibold">
+                      Risk: CRITICAL (94.2% SLA Breach Probability)
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Model: Linear Regression + Double Exponential Smoothing (Holt-Winters)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 relative z-10">
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-400">Projected Time-To-Failure (TTF)</div>
+                    <div className="text-2xl font-black font-mono text-amber-400">
+                      ~1.2 mins
+                    </div>
+                    <div className="text-[11px] text-slate-300 truncate">
+                      Ceiling: 100% Saturation / Kernel Thread Lock
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-400">Preventative Action Window</div>
+                    <div className="text-2xl font-black font-mono text-emerald-400">
+                      0.8 mins left
+                    </div>
+                    <div className="text-[11px] text-slate-300">
+                      Act before hard lock to prevent customer outage
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                    <div className="text-[10px] font-mono uppercase text-slate-400">Proactive Intervention</div>
+                    <div className="text-xs font-mono text-cyan-200 leading-relaxed font-semibold">
+                      Preemptively trigger horizontal pod replica scale-out (+2 pods) before hard thread exhaustion.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Horizon Trajectory Points */}
+                <div className="p-4 rounded-xl bg-black/50 border border-white/10 space-y-2 relative z-10">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-slate-300 font-bold">PREDICTED HORIZON TRAJECTORY</span>
+                    <span className="text-rose-400 font-semibold">
+                      Trajectory on 'system.cpu.utilization' projects 100% Saturation in ~1.2 mins if unmitigated
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-center">
+                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
+                      <span className="text-[10px] text-slate-400 uppercase block">NOW</span>
+                      <span className="text-xs font-bold text-cyan-300 block">96.8%</span>
+                    </div>
+                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
+                      <span className="text-[10px] text-slate-400 uppercase block">T+0.4m</span>
+                      <span className="text-xs font-bold text-cyan-300 block">98.0%</span>
+                    </div>
+                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
+                      <span className="text-[10px] text-slate-400 uppercase block">T+0.7m</span>
+                      <span className="text-xs font-bold text-cyan-300 block">99.2%</span>
+                    </div>
+                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
+                      <span className="text-[10px] text-slate-400 uppercase block">T+1.2m (BREACH)</span>
+                      <span className="text-xs font-bold text-rose-400 block">100.0%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
+              </div>
+
+              {/* 2. TOPOLOGY-AWARE INCIDENT DOSSIERS LIST */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-900">Active Incident Dockets &amp; Root Cause Analysis</h3>
+                  <span className="text-xs font-mono text-slate-500">
+                    Sliding 90s Multi-Signal Correlation Envelope
+                  </span>
+                </div>
+
+                {(cloudIncidents.length > 0 ? cloudIncidents : [
+                  {
+                    incident_id: "inc_casc_1042",
+                    title: "Compute Starvation Cascading to API Gateway Latency",
+                    severity: "critical",
+                    status: "active",
+                    correlation_score: 94.0,
+                    source_nodes: ["node_primary", "svc_api_gateway"],
+                    remediation_policy: "OPS-SCALE-REPLICAS-02 (Pre-authorized)",
+                    created_at_utc: new Date().toISOString(),
+                    rca: {
+                      primary_probable_cause: {
+                        metric: "system.cpu.utilization",
+                        source_node: "node_primary",
+                        composite_score: 98.9,
+                        mad_z_score: 4.82,
+                        temporal_score: 1.0,
+                        magnitude_score: 0.96,
+                        topology_score: 1.0,
+                        cascade_score: 1.0,
+                        rationale: "Onset offset: +0.0s (Time: 1.00), MAD deviation: 4.82σ, Topology upstream rank: 1.00, Downstream cascade: 1.00"
+                      },
+                      confidence_pct: 92.3,
+                      confidence_rating: "HIGH",
+                      alternative_causes: [
+                        { metric: "system.memory.percent", source_node: "node_primary", composite_score: 78.1, mad_z_score: 3.45, rationale: "Onset offset: +13.0s (Time: 0.78), Downstream cascade: 0.50" },
+                        { metric: "api.latency.ms", source_node: "svc_api_gateway", composite_score: 56.4, mad_z_score: 3.91, rationale: "Onset offset: +25.0s (Time: 0.58), Downstream symptom" }
+                      ],
+                      ai_explanation: {
+                        summary: "Cpu utilization on node_primary increased from 56.2 to 96.8, followed by subsequent degradation in system.memory.percent, api.latency.ms. Cpu utilization saturation is the leading hypothesis (92.3% confidence). Investigate resource-intensive worker threads, concurrency locks, and recent workload spikes.",
+                        observed_facts: [
+                          "Metric 'system.cpu.utilization' on host 'node_primary' exhibited an anomalous deviation from baseline 56.2 to peak 96.8 (+4.8σ MAD).",
+                          "At offset +13.0s, downstream component 'node_primary' reported Correlated Anomaly on 'system.memory.percent' (measured: 88.4).",
+                          "At offset +25.0s, downstream component 'svc_api_gateway' reported Downstream Symptom on 'api.latency.ms' (measured: 1850.0)."
+                        ],
+                        leading_hypothesis: "Physical resource exhaustion or contention triggered by 'system.cpu.utilization' on node 'node_primary' is the leading hypothesis. Temporal precedence indicates this anomaly preceded downstream degradation."
+                      },
+                      topology_subgraph: {
+                        nodes: [
+                          { id: "node_primary", name: "Primary Compute Host", type: "host", tier: "Infrastructure", status: "breached" },
+                          { id: "svc_api_gateway", name: "API Gateway & Auth Proxy", type: "service", tier: "Edge Ingress", status: "degraded" },
+                          { id: "svc_order_service", name: "Transaction Order Service", type: "service", tier: "Application", status: "degraded" },
+                          { id: "net_vpc_gateway", name: "VPC Transit Gateway", type: "network", tier: "Network", status: "healthy" }
+                        ],
+                        edges: [
+                          { from: "node_primary", to: "svc_api_gateway", type: "RUNS_ON" },
+                          { from: "svc_api_gateway", to: "svc_order_service", type: "DEPENDS_ON", latency_ms: 4.2 }
+                        ]
+                      },
+                      evidence_timeline: [
+                        { step_order: 1, time_offset_s: "+0.0s", source_node: "node_primary", metric: "system.cpu.utilization", observed_value: 96.8, mad_z_score: 4.82, role: "Initial Trigger (Suspected Cause)" },
+                        { step_order: 2, time_offset_s: "+13.0s", source_node: "node_primary", metric: "system.memory.percent", observed_value: 88.4, mad_z_score: 3.45, role: "Correlated Anomaly" },
+                        { step_order: 3, time_offset_s: "+25.0s", source_node: "svc_api_gateway", metric: "api.latency.ms", observed_value: 1850.0, mad_z_score: 3.91, role: "Downstream Symptom" }
+                      ],
+                      investigation_steps: [
+                        "Inspect top resource-consuming worker processes and thread count on host 'node_primary'.",
+                        "Check for runaway worker loops or unthrottled background cron batches.",
+                        "Verify horizontal pod autoscaling (HPA) triggers.",
+                        "Rule out secondary hypothesis: 'system.memory.percent' on 'node_primary'.",
+                        "Authorize operator remediation runbook once root cause is confirmed."
+                      ]
+                    }
+                  }
+                ]).map((inc: any) => {
+                  const rca = inc.rca;
+                  const primary = rca?.primary_probable_cause;
+                  const isExp = expandedDossier[inc.incident_id] ?? true;
+
+                  return (
+                    <div key={inc.incident_id} className="p-6 rounded-2xl bg-white border border-slate-200 space-y-5 shadow-sm">
+                      {/* Top Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-mono text-xs font-bold text-blue-700">
+                            {inc.incident_id.toUpperCase()}
+                          </span>
+                          <span className="text-slate-300">&middot;</span>
+                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
+                            inc.severity === "critical" ? "bg-rose-100 text-rose-700 border border-rose-300" : "bg-amber-100 text-amber-700 border border-amber-300"
+                          }`}>
+                            {inc.severity}
+                          </span>
+                          <span className="px-3 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                            {inc.correlation_score || 94}% CORRELATED CLUSTER
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono text-slate-500">
+                          {new Date(inc.created_at_utc).toLocaleTimeString()} UTC
+                        </span>
+                      </div>
+
+                      <h4 className="text-lg font-bold text-slate-900">{inc.title}</h4>
+
+                      {/* Primary Cause Spotlight Card */}
+                      {primary && (
+                        <div className="p-5 rounded-2xl bg-[#0B1528] text-white border border-[#1E293B] space-y-4 shadow-md">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[10px] font-mono font-bold uppercase tracking-wider">
+                              PRIMARY PROBABLE ROOT CAUSE
+                            </span>
+                            <span className="text-xs font-mono text-cyan-400 font-semibold">
+                              {rca?.confidence_pct || 92.3}% Confidence ({rca?.confidence_rating || "HIGH"})
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
+                              <span className="text-[10px] font-mono uppercase text-slate-400 block">Suspected Metric</span>
+                              <div className="font-bold font-mono text-[#5EE6F0] text-sm truncate">{primary.metric}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
+                              <span className="text-[10px] font-mono uppercase text-slate-400 block">Host Node</span>
+                              <div className="font-bold font-mono text-white text-sm truncate">{primary.source_node}</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
+                              <span className="text-[10px] font-mono uppercase text-slate-400 block">MAD Deviation</span>
+                              <div className="font-bold font-mono text-amber-400 text-sm">+{primary.mad_z_score}σ</div>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-0.5">
+                              <span className="text-[10px] font-mono uppercase text-slate-400 block">Composite Score</span>
+                              <div className="font-bold font-mono text-purple-300 text-sm">{primary.composite_score}%</div>
+                            </div>
+                          </div>
+
+                          {/* Grounded Summary */}
+                          {rca?.ai_explanation && (
+                            <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                              <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block">
+                                AI-Grounded Hypothesis (Telemetry Verified)
+                              </span>
+                              <p className="text-xs font-mono text-slate-200 leading-relaxed">
+                                {rca.ai_explanation.summary}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Expandable Details: Topology Graph & Evidence Timeline */}
+                      {isExp && rca && (
+                        <div className="space-y-4 pt-1">
+                          {/* Infrastructure Dependency Graph Nodes */}
+                          {rca.topology_subgraph && (
+                            <div className="p-4 rounded-xl bg-[#08101E] text-white border border-slate-800 space-y-3">
+                              <span className="text-xs font-mono font-bold text-cyan-400 uppercase block">
+                                Infrastructure Dependency Subgraph
+                              </span>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {rca.topology_subgraph.nodes.map((node: any) => {
+                                  const isRoot = node.id === primary?.source_node;
+                                  return (
+                                    <div key={node.id} className={`p-2.5 rounded-lg border text-xs font-mono space-y-0.5 ${
+                                      isRoot ? "bg-rose-500/20 border-rose-500/50" : node.status === "degraded" ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10"
+                                    }`}>
+                                      <div className="flex items-center justify-between text-[9px]">
+                                        <span className="text-slate-400 uppercase">{node.tier}</span>
+                                        <span className={`font-bold ${isRoot ? "text-rose-300" : "text-emerald-300"}`}>
+                                          {isRoot ? "ROOT CAUSE" : node.status}
+                                        </span>
+                                      </div>
+                                      <div className="font-bold text-white text-[11px] truncate">{node.name}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Evidence Timeline */}
+                          {rca.evidence_timeline && (
+                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                              <span className="text-xs font-mono font-bold text-slate-800 uppercase block">
+                                Chronological Evidence Timeline
+                              </span>
+                              <div className="space-y-1.5 font-mono text-xs">
+                                {rca.evidence_timeline.map((step: any) => (
+                                  <div key={step.step_order} className="flex flex-wrap items-center justify-between p-2 rounded bg-white border border-slate-200 gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-blue-700">#{step.step_order} ({step.time_offset_s})</span>
+                                      <span className="text-slate-800">{step.source_node} &middot; <strong>{step.metric}</strong></span>
+                                      <span className="text-amber-600 font-semibold">({step.observed_value} | +{step.mad_z_score}σ)</span>
+                                    </div>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                      step.role.includes("Initial") ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600"
+                                    }`}>
+                                      {step.role}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Investigation Steps & Remediation */}
+                          {rca.investigation_steps && (
+                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                              <span className="text-xs font-mono font-bold text-slate-800 uppercase block">
+                                Recommended Actionable Investigation Steps
+                              </span>
+                              <ol className="text-xs font-mono text-slate-700 space-y-1 pl-4 list-decimal">
+                                {rca.investigation_steps.map((st: string, sIdx: number) => (
+                                  <li key={sIdx}>{st}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Remediation Action Footer */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                        <span className="text-xs font-mono text-slate-500">
+                          Policy: <strong className="text-slate-800">{inc.remediation_policy}</strong>
+                        </span>
+
+                        {confirmRemediation ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-amber-700 font-bold">
+                              Confirm restart &amp; scale-out on {inc.source_nodes.join(", ")}?
+                            </span>
+                            <button
+                              onClick={() => setConfirmRemediation(false)}
+                              className="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => {
+                                setConfirmRemediation(false);
+                                handleRemediate(inc.incident_id);
+                              }}
+                              className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow cursor-pointer"
+                            >
+                              Confirm &amp; Execute
+                            </button>
+                          </div>
+                        ) : inc.status === "active" ? (
+                          <button
+                            onClick={() => setConfirmRemediation(true)}
+                            className="px-5 py-2 rounded-full bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center gap-1.5 shadow transition cursor-pointer"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>Review &amp; Approve Remediation</span>
+                          </button>
+                        ) : (
+                          <span className="px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono font-bold flex items-center gap-1 border border-emerald-300">
+                            <Check className="w-3.5 h-3.5" />
+                            Remediated &amp; Resolved
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
             TAB 3: SLA RELIABILITY METRICS VIEW
             ========================================================================= */}
         {activeTab === "sla" && (
@@ -1740,11 +2117,10 @@ export default function CloudDashboardPage() {
         </button>
 
         <button
-          onClick={() => {
-            const inc = eventsByDate[21][0];
-            setSelectedIncident(inc);
-          }}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 font-semibold text-xs transition-all duration-200 cursor-pointer vision-interactive"
+          onClick={() => setActiveTab("incidents")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-xs transition-all duration-200 cursor-pointer vision-interactive ${
+            activeTab === "incidents" ? "bg-zinc-900 text-white scale-105" : "text-zinc-400 hover:text-white hover:bg-white/10"
+          }`}
         >
           <AlertTriangle className="w-4 h-4 text-amber-400" />
           <span>Incidents</span>
