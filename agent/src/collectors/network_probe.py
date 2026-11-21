@@ -2,7 +2,7 @@ import time
 import socket
 from typing import List, Dict, Any
 
-def probe_network_latency(target_host: str = "1.1.1.1", target_port: int = 53, timeout_sec: float = 1.5) -> List[Dict[str, Any]]:
+def probe_network_latency(target_host: str = "127.0.0.1", target_port: int = 8001, timeout_sec: float = 0.05) -> List[Dict[str, Any]]:
     """
     Measures real socket round-trip time (RTT) and packet availability.
     """

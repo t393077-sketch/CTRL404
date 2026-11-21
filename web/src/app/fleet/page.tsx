@@ -96,7 +96,7 @@ export default function FleetPage() {
   // Fetch Pipeline stats
   useEffect(() => {
     const fetchPipeline = () => {
-      fetch("http://127.0.0.1:8765/pipeline-stats")
+      fetch("http://127.0.0.1:8000/pipeline-stats")
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.stages) setPipelineStages(data.stages);

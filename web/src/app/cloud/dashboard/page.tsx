@@ -145,6 +145,7 @@ export default function CloudDashboardPage() {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
   const [liveEventCount, setLiveEventCount] = useState(0);
+  const [liveCpuStream, setLiveCpuStream] = useState<{ time: string; value: number }[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
   // Active tenant ID for API calls
@@ -333,7 +334,7 @@ export default function CloudDashboardPage() {
   useEffect(() => {
     fetchCloudData(tenantId);
     fetchHistorical(histPage, histCategory, histSynthetic);
-    const interval = setInterval(() => fetchCloudData(tenantId), 3000);
+    const interval = setInterval(() => fetchCloudData(tenantId), 1000);
     return () => clearInterval(interval);
   }, [tenantId]);
 
@@ -352,6 +353,10 @@ export default function CloudDashboardPage() {
         try {
           const msg = JSON.parse(event.data);
           setLiveEventCount((prev) => prev + 1);
+          if (msg.metric === "system.cpu.utilization" && typeof msg.value === "number") {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            setLiveCpuStream((prev) => [...prev.slice(-12), { time: timeStr, value: Math.round(msg.value) }]);
+          }
           if (msg.category && msg.metric) {
             setCategoryData((prev: any) => {
               const updated = prev ? { ...prev } : {};
@@ -433,25 +438,28 @@ export default function CloudDashboardPage() {
   const duplicateCount = reliability?.total_duplicates_blocked ?? 0;
   const slaPct = reliability?.sla_compliant_pct ? `${reliability.sla_compliant_pct}%` : "100%";
 
-  const trendsData = (reliability?.recent_trends && reliability.recent_trends.length > 0)
+  const liveCpu = Number(categoryData?.compute?.metrics?.["system.cpu.utilization"]?.value ?? (liveCpuStream.length ? liveCpuStream[liveCpuStream.length - 1].value : 28));
+  const liveMem = Number(categoryData?.compute?.metrics?.["system.memory.utilization"]?.value ?? 48);
+  const liveDisk = Number(categoryData?.storage?.metrics?.["system.disk.utilization"]?.value ?? 68);
+  const liveNetRate = Number(categoryData?.network?.metrics?.["network.bandwidth.bytes_recv_sec"]?.value ?? 28000);
+  const liveNet = Math.min(100, Math.max(8, Math.round(liveNetRate / 1024)));
+
+  const trendsData = (liveCpuStream.length >= 2)
+    ? liveCpuStream
+    : (reliability?.recent_trends && reliability.recent_trends.length > 0)
     ? reliability.recent_trends
-    : (reliability?.latency_samples && reliability.latency_samples.length > 0)
-    ? reliability.latency_samples.slice(-6).map((s) => ({ time: s.time.slice(0, 5), value: Math.min(100, Math.round(s.latency_ms)) }))
     : [
-        { time: "12:00", value: 32 },
-        { time: "12:05", value: 68 },
-        { time: "12:10", value: 45 },
-        { time: "12:15", value: 88 },
-        { time: "12:20", value: 54 }
+        { time: "12:00", value: Math.round(liveCpu * 0.85) },
+        { time: "12:05", value: Math.round(liveCpu * 1.05) },
+        { time: "12:10", value: Math.round(liveCpu * 0.95) },
+        { time: "12:15", value: Math.round(liveCpu) }
       ];
 
   const resourceData = [
-    { time: "30%", value: 20 },
-    { time: "40%", value: 65 },
-    { time: "50%", value: 40 },
-    { time: "60%", value: 78 },
-    { time: "70%", value: 50 },
-    { time: "80%", value: 95 }
+    { time: "0s", value: Math.round(liveCpu * 0.9) },
+    { time: "10s", value: Math.round(liveCpu * 1.1) },
+    { time: "20s", value: Math.round(liveCpu * 0.95) },
+    { time: "30s", value: Math.round(liveCpu) }
   ];
 
   return (
@@ -691,10 +699,10 @@ export default function CloudDashboardPage() {
                 {/* 4 Vertical Level Meters */}
                 <div className="grid grid-cols-4 gap-2 text-center">
                   {[
-                    { label: "CPU", val: "24%", h: "24%" },
-                    { label: "Mem", val: "46%", h: "46%" },
-                    { label: "Disk", val: "32%", h: "32%" },
-                    { label: "Net", val: "12%", h: "12%" }
+                    { label: "CPU", val: `${Math.round(liveCpu)}%`, h: `${Math.min(100, Math.max(12, Math.round(liveCpu)))}%` },
+                    { label: "Mem", val: `${Math.round(liveMem)}%`, h: `${Math.min(100, Math.max(12, Math.round(liveMem)))}%` },
+                    { label: "Disk", val: `${Math.round(liveDisk)}%`, h: `${Math.min(100, Math.max(12, Math.round(liveDisk)))}%` },
+                    { label: "Net", val: `${Math.round(liveNet)}%`, h: `${Math.min(100, Math.max(12, Math.round(liveNet)))}%` }
                   ].map((m) => (
                     <div key={m.label} className="flex flex-col items-center gap-1.5">
                       <div className="w-3.5 h-16 rounded-full bg-slate-200/80 p-0.5 flex flex-col justify-end overflow-hidden shadow-inner">

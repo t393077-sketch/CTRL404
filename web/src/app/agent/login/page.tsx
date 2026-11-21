@@ -29,15 +29,15 @@ export default function AgentLoginPage() {
     setLoading(true);
 
     try {
-      // 2. Verify local agent daemon is reachable on port 8765
-      const res = await fetch("http://127.0.0.1:8765/status");
+      // 2. Verify local agent daemon is reachable on port 8000
+      const res = await fetch("http://127.0.0.1:8000/status");
       if (res.ok) {
         // Enclave verified
         if (typeof window !== "undefined") {
           sessionStorage.setItem("seenil_agent_session", JSON.stringify({
             nodeId: nodeId.trim(),
             token: token.trim(),
-            enclavePort: 8765,
+            enclavePort: 8000,
             loggedInAt: new Date().toISOString()
           }));
         }
@@ -52,13 +52,13 @@ export default function AgentLoginPage() {
           sessionStorage.setItem("seenil_agent_session", JSON.stringify({
             nodeId: nodeId.trim(),
             token: token.trim(),
-            enclavePort: 8765,
+            enclavePort: 8000,
             loggedInAt: new Date().toISOString()
           }));
         }
         router.push("/agent/dashboard");
       } else {
-        setErrorMessage("Agent daemon unreachable on localhost:8765 and credentials not recognized.");
+        setErrorMessage("Agent daemon unreachable on localhost:8000 and credentials not recognized.");
       }
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export default function AgentLoginPage() {
                 SEENIL Agent Console
               </h1>
               <p className="text-xs text-zinc-400 font-mono mt-1">
-                Customer Host &amp; Egress Vault Login • Port 8765
+                Customer Host &amp; Egress Vault Login • Port 8000
               </p>
             </div>
           </div>

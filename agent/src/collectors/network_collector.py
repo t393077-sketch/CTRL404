@@ -9,7 +9,7 @@ _last_bytes_recv: Optional[int] = None
 _last_packets_sent: Optional[int] = None
 _last_packets_recv: Optional[int] = None
 
-def collect_network_metrics(target_host: str = "8.8.8.8", target_port: int = 53) -> List[Dict[str, Any]]:
+def collect_network_metrics(target_host: str = "127.0.0.1", target_port: int = 8001) -> List[Dict[str, Any]]:
     """
     Collects real Network telemetry:
     - Network bandwidth (upload/download bytes/sec)
@@ -69,7 +69,7 @@ def collect_network_metrics(target_host: str = "8.8.8.8", target_port: int = 53)
     # 2. Network Latency (RTT) & Packet Loss
     start_t = time.perf_counter()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(1.2)
+    sock.settimeout(0.08)
     packet_loss = 0.0
     try:
         sock.connect((target_host, target_port))

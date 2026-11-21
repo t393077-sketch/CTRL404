@@ -60,7 +60,7 @@ pipeline_counters = {
 
 def background_collector_loop():
     logger.info("Agent daemon background collection loop started.")
-    time.sleep(1)
+    time.sleep(0.5)
     service = AgentService()
     while True:
         try:
@@ -70,7 +70,7 @@ def background_collector_loop():
                 pipeline_counters[k] += len(events) or 1
         except Exception as e:
             logger.warning(f"Background collector error: {e}")
-        time.sleep(1.0)
+        time.sleep(0.5)
 
 @app.on_event("startup")
 def start_background_loop():

@@ -39,6 +39,14 @@ def sign_payload_bytes(raw_bytes: bytes, secret: str = None) -> str:
     key = (secret or agent_settings.HMAC_SECRET).encode("utf-8")
     return hmac.new(key, raw_bytes, hashlib.sha256).hexdigest()
 
+_client: Optional[httpx.Client] = None
+
+def get_http_client() -> httpx.Client:
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.Client(timeout=1.5, limits=httpx.Limits(max_keepalive_connections=30, max_connections=50))
+    return _client
+
 def send_payload_to_cloud(
     payload: Dict[str, Any],
     cloud_url: str = None,
@@ -72,14 +80,14 @@ def send_payload_to_cloud(
     }
 
     try:
-        with httpx.Client(timeout=timeout_sec) as client:
-            resp = client.post(url, content=raw_bytes, headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                return True, 200, data.get("message", "Ingested successfully")
-            else:
-                return False, resp.status_code, resp.text
-    except httpx.RequestError as e:
+        client = get_http_client()
+        resp = client.post(url, content=raw_bytes, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            return True, 200, data.get("message", "Ingested successfully")
+        else:
+            return False, resp.status_code, resp.text
+    except Exception as e:
         return False, None, f"Network transport error: {e}"
 
 def send_heartbeat_to_cloud(

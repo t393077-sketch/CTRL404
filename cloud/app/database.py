@@ -35,13 +35,24 @@ def get_engine():
                 sqlite_path = BASE_DIR / "cloud" / "seenil.db"
                 _engine = create_engine(
                     f"sqlite:///{sqlite_path}",
-                    connect_args={"check_same_thread": False}
+                    connect_args={"check_same_thread": False, "timeout": 30}
                 )
         else:
             _engine = create_engine(
                 db_url,
-                connect_args={"check_same_thread": False}
+                connect_args={"check_same_thread": False, "timeout": 30}
             )
+
+    if _engine is not None and "sqlite" in str(_engine.url):
+        from sqlalchemy import event
+        @event.listens_for(_engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.execute("PRAGMA cache_size=-64000")
+            cursor.close()
     return _engine
 
 def get_sessionmaker():

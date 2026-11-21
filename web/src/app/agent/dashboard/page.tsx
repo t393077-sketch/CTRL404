@@ -88,7 +88,7 @@ export default function AgentDashboardPage() {
   const fetchAgentData = async () => {
     try {
       // 1. Audit logs (local SQLite)
-      const resLogs = await fetch("http://127.0.0.1:8765/audit-logs");
+      const resLogs = await fetch("http://127.0.0.1:8000/audit-logs");
       if (resLogs.ok) {
         const data = await resLogs.json();
         const entries = Array.isArray(data) ? data : (data?.entries || []);
@@ -107,7 +107,7 @@ export default function AgentDashboardPage() {
       }
 
       // 2. Local status
-      const resStatus = await fetch("http://127.0.0.1:8765/status");
+      const resStatus = await fetch("http://127.0.0.1:8000/status");
       if (resStatus.ok) {
         const data = await resStatus.json();
         setAgentStatus(data);
@@ -127,7 +127,7 @@ export default function AgentDashboardPage() {
   const triggerControl = async (name: string, endpoint: string, msg: string) => {
     setActiveAction(name);
     try {
-      await fetch(`http://127.0.0.1:8765/control/${endpoint}`, { method: "POST" });
+      await fetch(`http://127.0.0.1:8000/control/${endpoint}`, { method: "POST" });
       setActionNotice(msg);
       await fetchAgentData();
     } catch (e: any) {
@@ -172,7 +172,7 @@ export default function AgentDashboardPage() {
   const handleRunSandboxRedaction = async (customText?: string) => {
     const raw = typeof customText === "string" ? customText : sandboxInput;
     try {
-      const res = await fetch("http://127.0.0.1:8765/redact", {
+      const res = await fetch("http://127.0.0.1:8000/redact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: raw })
@@ -352,7 +352,7 @@ export default function AgentDashboardPage() {
               <span className="text-2xl font-black tracking-tight text-[#0F172A]">SEENIL</span>
             </div>
             <span className="text-[11px] font-semibold text-slate-500 tracking-wider mt-0.5">
-              Tier 1: Customer Local Agent Console (Port 8765)
+              Tier 1: Customer Local Agent Console (Port 8000)
             </span>
           </div>
 
@@ -475,7 +475,7 @@ export default function AgentDashboardPage() {
           <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-fadeIn">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span>Agent Daemon temporarily unreachable on localhost:8765. Attempting to reconnect...</span>
+              <span>Agent Daemon temporarily unreachable on localhost:8000. Attempting to reconnect...</span>
             </div>
             <button onClick={() => fetchAgentData()} className="text-amber-800 hover:text-black font-bold cursor-pointer underline text-[11px]">
               Retry Now

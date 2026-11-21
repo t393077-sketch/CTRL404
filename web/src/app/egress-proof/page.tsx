@@ -44,7 +44,7 @@ export default function EgressProofPage() {
 
   const fetchLocalAudit = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8765/egress");
+      const res = await fetch("http://127.0.0.1:8000/egress");
       if (res.ok) {
         const data = await res.json();
         if (data && data.entries) {
@@ -144,7 +144,7 @@ export default function EgressProofPage() {
           <div className="flex items-center gap-2">
             <div className="vision-pill px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold text-slate-700">
               <Lock className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Direct SQLite Machine Connection (Port 8765)</span>
+              <span>Direct SQLite Machine Connection (Port 8000)</span>
             </div>
           </div>
 

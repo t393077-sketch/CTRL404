@@ -72,7 +72,7 @@ export default function ReliabilityPage() {
       }
 
       // 2. Agent Local Outbox Status
-      const resAgent = await fetch("http://127.0.0.1:8765/status");
+      const resAgent = await fetch("http://127.0.0.1:8000/status");
       if (resAgent.ok) {
         const data = await resAgent.json();
         setAgentStatus(data);

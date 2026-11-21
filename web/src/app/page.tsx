@@ -78,7 +78,7 @@ export default function ChoiceScreen() {
                 <h2 className="text-2xl font-bold text-white group-hover:text-blue-300 transition-colors">
                   SEENIL Agent Console
                 </h2>
-                <p className="text-xs text-zinc-400 font-mono mt-1">Customer Host &amp; Edge Vault • localhost:8765</p>
+                <p className="text-xs text-zinc-400 font-mono mt-1">Customer Host &amp; Edge Vault • localhost:8000</p>
               </div>
 
               <p className="text-sm text-zinc-300 leading-relaxed font-normal">

@@ -1060,16 +1060,16 @@ def get_historical_telemetry(
     if source_id:
         query = query.filter(TelemetryEvent.source_id == source_id)
 
-    total_count = query.count()
-
-    # Fast SQL aggregations on DB engine
+    # Fast SQL aggregations on DB engine in a single unified pass
     stats = query.with_entities(
+        func.count(TelemetryEvent.id).label("cnt"),
         func.avg(TelemetryEvent.value).label("avg"),
         func.min(TelemetryEvent.value).label("min"),
         func.max(TelemetryEvent.value).label("max"),
         func.avg(TelemetryEvent.ingest_latency_ms).label("avg_latency")
-    ).first() if total_count > 0 else None
+    ).first()
 
+    total_count = int(stats.cnt or 0) if stats else 0
     offset = (page - 1) * page_size
     items = query.order_by(desc(TelemetryEvent.event_time_utc)).offset(offset).limit(page_size).all()
     exec_time_ms = round((time.perf_counter() - t0) * 1000.0, 2)

@@ -46,7 +46,7 @@ export default function DemoControlsPage() {
     {
       id: "log-init",
       time: new Date().toISOString().substring(11, 19) + "Z",
-      message: "SEENIL Edge Daemon connected on http://127.0.0.1:8765. Ready for evaluator test cycles.",
+      message: "SEENIL Edge Daemon connected on http://127.0.0.1:8000. Ready for evaluator test cycles.",
       type: "info"
     }
   ]);
@@ -63,7 +63,7 @@ export default function DemoControlsPage() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8765/status");
+      const res = await fetch("http://127.0.0.1:8000/status");
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -81,7 +81,7 @@ export default function DemoControlsPage() {
     setActiveButton(name);
     setToastMessage(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8765/control/${endpoint}`, {
+      const res = await fetch(`http://127.0.0.1:8000/control/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -149,7 +149,7 @@ export default function DemoControlsPage() {
           <div className="flex items-center gap-3">
             <div className="vision-pill px-3 py-1 flex items-center gap-2 text-xs font-semibold text-emerald-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Node 8765 Active</span>
+              <span>Node 8000 Active</span>
             </div>
             <button className="vision-pill p-2 text-slate-600 hover:text-black transition">
               <Bell className="w-4 h-4" />
