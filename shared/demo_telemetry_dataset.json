@@ -1,0 +1,311 @@
+{
+  "_metadata": {
+    "project": "SEENIL — Observability Without Exposure",
+    "dataset_type": "SYNTHETIC_CONTROLLED_DEMO_DATASET",
+    "description": "Realistic, schema-compliant synthetic scenarios designed for Phase 3 evaluation testing and jury demonstrations.",
+    "warning": "All secrets, passwords, tokens, and IP addresses in this file are STRICTLY FAKE CANARIES for testing zero-exposure redaction.",
+    "schema": "shared/payload.schema.json"
+  },
+  "scenarios": {
+    "scenario_a_normal": {
+      "name": "Normal Operating Baseline",
+      "description": "Baseline telemetry within healthy parameters across CPU, Memory, Disk, and Network RTT.",
+      "events": [
+        {
+          "payload_id": "11111111-1111-4111-8111-111111111101",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_01",
+          "metric": "system.cpu.utilization",
+          "value": 24.2,
+          "event_time_utc": "2026-11-21T07:00:00Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "Host CPU load nominal at 24.2%"
+        },
+        {
+          "payload_id": "11111111-1111-4111-8111-111111111102",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_01",
+          "metric": "system.memory.utilization",
+          "value": 48.6,
+          "event_time_utc": "2026-11-21T07:00:00Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "Physical RAM load nominal at 48.6%"
+        },
+        {
+          "payload_id": "11111111-1111-4111-8111-111111111103",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_01",
+          "metric": "system.disk.utilization",
+          "value": 62.4,
+          "event_time_utc": "2026-11-21T07:00:00Z",
+          "source_tz": "UTC",
+          "health": "Good",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "Storage volume at 62.4% capacity"
+        },
+        {
+          "payload_id": "11111111-1111-4111-8111-111111111104",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_01",
+          "metric": "network.latency.rtt",
+          "value": 18.2,
+          "event_time_utc": "2026-11-21T07:00:00Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "network",
+          "severity": "info",
+          "alert_context": "Gateway RTT 18.2ms to upstream DNS"
+        },
+        {
+          "payload_id": "11111111-1111-4111-8111-111111111105",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_01",
+          "metric": "network.packet_loss",
+          "value": 0.0,
+          "event_time_utc": "2026-11-21T07:00:00Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "network",
+          "severity": "info",
+          "alert_context": "Network reachability loss 0.0%"
+        }
+      ]
+    },
+    "scenario_b_cpu_anomaly": {
+      "name": "CPU Gradual Rise, Spike & Normalization",
+      "description": "Gradual increase from 30% to 65% to 85%, culminating in sudden 96.8% spike and recovery back to 28%.",
+      "events": [
+        {
+          "payload_id": "22222222-2222-4222-8222-222222222201",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_02",
+          "metric": "system.cpu.utilization",
+          "value": 32.0,
+          "event_time_utc": "2026-11-21T07:01:00Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "CPU normal load 32.0%"
+        },
+        {
+          "payload_id": "22222222-2222-4222-8222-222222222202",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_02",
+          "metric": "system.cpu.utilization",
+          "value": 68.5,
+          "event_time_utc": "2026-11-21T07:01:10Z",
+          "source_tz": "UTC",
+          "health": "Good",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "CPU utilization rising: worker thread load 68.5%"
+        },
+        {
+          "payload_id": "22222222-2222-4222-8222-222222222203",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_02",
+          "metric": "system.cpu.utilization",
+          "value": 86.0,
+          "event_time_utc": "2026-11-21T07:01:20Z",
+          "source_tz": "UTC",
+          "health": "Fair",
+          "category": "infrastructure",
+          "severity": "warning",
+          "alert_context": "CPU capacity stressed at 86.0%"
+        },
+        {
+          "payload_id": "22222222-2222-4222-8222-222222222204",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_02",
+          "metric": "system.cpu.utilization",
+          "value": 96.8,
+          "event_time_utc": "2026-11-21T07:01:30Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "infrastructure",
+          "severity": "critical",
+          "alert_context": "CPU core starvation spike at 96.8%"
+        },
+        {
+          "payload_id": "22222222-2222-4222-8222-222222222205",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_02",
+          "metric": "system.cpu.utilization",
+          "value": 28.5,
+          "event_time_utc": "2026-11-21T07:01:40Z",
+          "source_tz": "UTC",
+          "health": "Excellent",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "CPU load recovered to normal at 28.5%"
+        }
+      ]
+    },
+    "scenario_c_memory_anomaly": {
+      "name": "Memory Leak & Pressure",
+      "description": "Gradual RAM saturation climbing past 92% into critical swapping.",
+      "events": [
+        {
+          "payload_id": "33333333-3333-4333-8333-333333333301",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_03",
+          "metric": "system.memory.utilization",
+          "value": 72.0,
+          "event_time_utc": "2026-11-21T07:02:00Z",
+          "source_tz": "UTC",
+          "health": "Good",
+          "category": "infrastructure",
+          "severity": "info",
+          "alert_context": "Active memory consumption 72.0%"
+        },
+        {
+          "payload_id": "33333333-3333-4333-8333-333333333302",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_03",
+          "metric": "system.memory.utilization",
+          "value": 88.5,
+          "event_time_utc": "2026-11-21T07:02:15Z",
+          "source_tz": "UTC",
+          "health": "Fair",
+          "category": "infrastructure",
+          "severity": "warning",
+          "alert_context": "Memory pool pressure 88.5%"
+        },
+        {
+          "payload_id": "33333333-3333-4333-8333-333333333303",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_03",
+          "metric": "system.memory.utilization",
+          "value": 95.8,
+          "event_time_utc": "2026-11-21T07:02:30Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "infrastructure",
+          "severity": "critical",
+          "alert_context": "Memory pool exhaustion: potential OOM killer trigger at 95.8%"
+        }
+      ]
+    },
+    "scenario_d_network_anomaly": {
+      "name": "Network Degradation & Packet Drop Surge",
+      "description": "Round trip time degradation from 15ms to 320ms and 15% packet loss.",
+      "events": [
+        {
+          "payload_id": "44444444-4444-4444-8444-444444444401",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_04",
+          "metric": "network.latency.rtt",
+          "value": 145.0,
+          "event_time_utc": "2026-11-21T07:03:00Z",
+          "source_tz": "UTC",
+          "health": "Fair",
+          "category": "network",
+          "severity": "warning",
+          "alert_context": "Gateway latency elevated to 145.0ms"
+        },
+        {
+          "payload_id": "44444444-4444-4444-8444-444444444402",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_04",
+          "metric": "network.latency.rtt",
+          "value": 320.0,
+          "event_time_utc": "2026-11-21T07:03:15Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "network",
+          "severity": "critical",
+          "alert_context": "Upstream router jitter surge: RTT at 320.0ms"
+        },
+        {
+          "payload_id": "44444444-4444-4444-8444-444444444403",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_04",
+          "metric": "network.packet_loss",
+          "value": 15.0,
+          "event_time_utc": "2026-11-21T07:03:15Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "network",
+          "severity": "critical",
+          "alert_context": "Unscheduled interface packet drops at 15.0%"
+        }
+      ]
+    },
+    "scenario_e_multi_signal": {
+      "name": "Co-occurring Multi-Signal Incident (CPU + Latency Surge)",
+      "description": "Simultaneous CPU exhaustion and upstream connection bottleneck triggering AI incident correlation.",
+      "events": [
+        {
+          "payload_id": "55555555-5555-4555-8555-555555555501",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_05",
+          "metric": "system.cpu.utilization",
+          "value": 98.2,
+          "event_time_utc": "2026-11-21T07:04:00Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "infrastructure",
+          "severity": "critical",
+          "alert_context": "Core worker thread lockup (CPU 98.2%)"
+        },
+        {
+          "payload_id": "55555555-5555-4555-8555-555555555502",
+          "tenant_id": "tenant_alpha",
+          "source_id": "node_collector_alpha_05",
+          "metric": "network.latency.rtt",
+          "value": 360.0,
+          "event_time_utc": "2026-11-21T07:04:01Z",
+          "source_tz": "UTC",
+          "health": "Poor",
+          "category": "network",
+          "severity": "critical",
+          "alert_context": "Synchronous gateway RTT saturation at 360.0ms"
+        }
+      ]
+    },
+    "scenario_f_privacy_canaries": {
+      "name": "Privacy Canaries & Redaction Diff",
+      "description": "Simulated application log containing 5 fake credentials that must be redacted locally.",
+      "raw_input_before_redaction": "[AUTH] user=sec_admin password=FakePass_Canary_998877_XyZ! apiKey=sk-live-canary-00112233445566778899 contact=forensic.auditor.test@enclave-bank.internal ip=198.51.100.42 token=ghp_FakeGitHubCanaryToken1234567890abcdef",
+      "sanitized_payload": {
+        "payload_id": "66666666-6666-4666-8666-666666666601",
+        "tenant_id": "tenant_alpha",
+        "source_id": "node_collector_alpha_06",
+        "metric": "security.auth.canary_test",
+        "value": 1.0,
+        "event_time_utc": "2026-11-21T07:05:00Z",
+        "source_tz": "UTC",
+        "health": "Fair",
+        "category": "security",
+        "severity": "warning",
+        "alert_context": "[AUTH] user=sec_admin password=[REDACTED:PASSWORD] apiKey=[REDACTED:API_KEY] contact=[REDACTED:EMAIL] ip=[REDACTED:IP] token=[REDACTED:TOKEN]"
+      }
+    },
+    "scenario_g_stale_collector": {
+      "name": "Stale Telemetry Auto-Downgrade",
+      "description": "Simulates a remote collector whose telemetry freezes for 35s, triggering automatic downgrade from Good to Fair/Poor.",
+      "source_id": "node_collector_stale_07",
+      "heartbeat_age_seconds": 35.0,
+      "expected_downgraded_state": "Fair"
+    },
+    "scenario_h_offline_recovery": {
+      "name": "Outage Buffering, Flushed Recovery & Deduplication",
+      "description": "Simulates a network sever, 5 events buffered in local SQLite outbox, network restored, all 5 flushed, re-send safely deduplicated.",
+      "buffered_payload_ids": [
+        "88888888-8888-4888-8888-888888888801",
+        "88888888-8888-4888-8888-888888888802",
+        "88888888-8888-4888-8888-888888888803",
+        "88888888-8888-4888-8888-888888888804",
+        "88888888-8888-4888-8888-888888888805"
+      ]
+    }
+  }
+}
