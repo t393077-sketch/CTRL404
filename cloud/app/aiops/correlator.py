@@ -268,6 +268,7 @@ class IncidentCorrelator:
             "contributing_metrics": rca_res.get("contributing_metrics"),
             "evidence_timeline": rca_res.get("evidence_timeline"),
             "investigation_steps": rca_res.get("investigation_steps"),
+            "predictive_analysis": rca_res.get("predictive_analysis"),
             "ai_explanation": ai_exp,
             "topology_subgraph": subgraph
         }

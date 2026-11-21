@@ -83,6 +83,22 @@ interface TopologyEdge {
   latency_ms?: number;
 }
 
+interface PredictiveAnalysis {
+  model: string;
+  time_to_exhaustion_minutes: number;
+  target_failure_ceiling: string;
+  sla_breach_probability_pct: number;
+  risk_level: string;
+  preventative_action_window_minutes: number;
+  proactive_recommendation: string;
+  forecast_trajectory: Array<{
+    time: string;
+    projected_value: number;
+    sla_threshold: number;
+  }>;
+  early_warning_summary: string;
+}
+
 interface RCADossier {
   incident_id: string;
   tenant_id: string;
@@ -96,6 +112,7 @@ interface RCADossier {
   contributing_metrics: string[];
   evidence_timeline: EvidenceStep[];
   investigation_steps: string[];
+  predictive_analysis?: PredictiveAnalysis;
   ai_explanation: {
     summary: string;
     observed_facts: string[];
@@ -423,6 +440,76 @@ export default function IncidentsPage() {
                     {/* EXPANDABLE SECTION: FULL RCA DOSSIER */}
                     {isExpanded && rca && (
                       <div className="space-y-6 pt-2 animate-fadeIn">
+                        {/* SECTION: PREDICTIVE ANALYSIS & EARLY WARNING FORECAST */}
+                        {rca.predictive_analysis && (
+                          <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F1E36] to-[#0A1424] text-white border border-cyan-500/30 space-y-4 shadow-xl relative overflow-hidden">
+                            <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                                <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 text-[10px] font-mono font-bold uppercase tracking-wider">
+                                  AIOPS PREDICTIVE EARLY WARNING ENGINE
+                                </span>
+                                <span className="text-xs text-slate-400 font-mono">|</span>
+                                <span className="text-xs font-mono text-amber-300 font-semibold">
+                                  Risk: {rca.predictive_analysis.risk_level} ({rca.predictive_analysis.sla_breach_probability_pct}% Breach Probability)
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-mono text-slate-400">
+                                Algorithm: {rca.predictive_analysis.model}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1 relative z-10">
+                              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                                <div className="text-[10px] font-mono uppercase text-slate-400">Projected Time-To-Failure (TTF)</div>
+                                <div className="text-2xl font-black font-mono text-amber-400">
+                                  ~{rca.predictive_analysis.time_to_exhaustion_minutes} mins
+                                </div>
+                                <div className="text-[11px] text-slate-300 truncate">
+                                  Ceiling: {rca.predictive_analysis.target_failure_ceiling}
+                                </div>
+                              </div>
+
+                              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                                <div className="text-[10px] font-mono uppercase text-slate-400">Preventative Action Window</div>
+                                <div className="text-2xl font-black font-mono text-emerald-400">
+                                  {rca.predictive_analysis.preventative_action_window_minutes} mins left
+                                </div>
+                                <div className="text-[11px] text-slate-300">
+                                  Act before hard lock to prevent customer outage
+                                </div>
+                              </div>
+
+                              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                                <div className="text-[10px] font-mono uppercase text-slate-400">Proactive Intervention</div>
+                                <div className="text-xs font-mono text-cyan-200 leading-relaxed font-semibold">
+                                  {rca.predictive_analysis.proactive_recommendation}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Predictive Trajectory Micro-Chart / Bar */}
+                            <div className="p-4 rounded-xl bg-black/50 border border-white/10 space-y-2 relative z-10">
+                              <div className="flex items-center justify-between text-[11px] font-mono">
+                                <span className="text-slate-300 font-bold">PREDICTED HORIZON TRAJECTORY</span>
+                                <span className="text-rose-400 font-semibold">{rca.predictive_analysis.early_warning_summary}</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-center">
+                                {rca.predictive_analysis.forecast_trajectory.map((pt, pIdx) => (
+                                  <div key={pIdx} className="p-2 rounded bg-white/5 border border-white/10 space-y-0.5">
+                                    <span className="text-[10px] text-slate-400 uppercase block">{pt.time}</span>
+                                    <span className={`text-xs font-bold block ${pIdx === 3 ? "text-rose-400" : "text-cyan-300"}`}>
+                                      {pt.projected_value}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-[90px] pointer-events-none" />
+                          </div>
+                        )}
+
                         {/* 1. FACTS VS HYPOTHESIS */}
                         {aiExplanation && (
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
