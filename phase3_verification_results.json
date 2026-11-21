@@ -1,0 +1,269 @@
+{
+  "audit_timestamp_utc": "2026-11-21T01:16:17.610022+00:00",
+  "test_environment": {
+    "cloud_url": "http://127.0.0.1:8000",
+    "agent_url": "http://127.0.0.1:8765",
+    "cloud_db": "C:\\Users\\shubh\\.gemini\\antigravity\\scratch\\seenil\\cloud\\seenil.db"
+  },
+  "tests": {
+    "Test_1": {
+      "step": 1,
+      "name": "Normal Operation & End-to-End Telemetry Flow",
+      "status": "PASS",
+      "details": {
+        "Cloud Service Status": "online",
+        "Agent Daemon Status": "online",
+        "Agent Outbox Depth": 0,
+        "Ingest Response Status": "stored",
+        "Ingest Round-trip Latency": "68.99 ms",
+        "Cloud Verified Storage": "STORED"
+      }
+    },
+    "Test_2": {
+      "step": 2,
+      "name": "Privacy Canary Injection & Zero-Exposure Proof",
+      "status": "PASS",
+      "details": {
+        "Canaries Injected into Raw Local Input": 5,
+        "Redaction Engine Triggered": true,
+        "Canaries Leaked in Sanitized String": 0,
+        "Canaries Leaked in Cloud Database Row": 0,
+        "Canaries Found in Raw Binary DB File on Disk": 0,
+        "Disk Search Breakdown": {
+          "FakePass_Canary": 0,
+          "sk-live-canary-": 0,
+          "forensic.audito": 0,
+          "198.51.100.42": 0,
+          "ghp_FakeGitHubC": 0
+        },
+        "Cryptographic SHA-256 Match": true,
+        "Verdict": "ZERO LEAKAGE CONFIRMED (Canaries exist ONLY on local enclave)"
+      }
+    },
+    "Test_3": {
+      "step": 3,
+      "name": "SaaS Allow-List Strict Enforcement",
+      "status": "PASS",
+      "details": {
+        "Attempted Extra Field Injection Status": "HTTP 422 UNPROCESSABLE ENTITY",
+        "Cloud Rejection Reason": "{'error': 'Schema validation failed', 'violations': [\"Additional properties are not allowed ('admin_override', 'unexpected_injected_field' were unexpected)\"]}",
+        "Local Pre-Egress Validator Blocked": true,
+        "Local Validation Errors": [
+          "Additional properties are not allowed ('admin_override', 'unexpected_injected_field' were unexpected)"
+        ],
+        "Attempted Missing Field Rejection Status": "HTTP 422 UNPROCESSABLE ENTITY",
+        "Schema Invariant Held": "additionalProperties: false STRICTLY ENFORCED"
+      }
+    },
+    "Test_4": {
+      "step": 4,
+      "name": "Four Health States & Threshold Transitions",
+      "status": "PASS",
+      "details": {
+        "States Verified": [
+          "Excellent",
+          "Good",
+          "Fair",
+          "Poor"
+        ],
+        "State Evaluation Breakdown": {
+          "Excellent": {
+            "value": 24.5,
+            "evaluated": "Excellent",
+            "matched": true,
+            "reason": "system.cpu.utilization is 24.5% (range for Excellent: 0.0-50.0%)",
+            "ingested": true
+          },
+          "Good": {
+            "value": 62.0,
+            "evaluated": "Good",
+            "matched": true,
+            "reason": "system.cpu.utilization is 62.0% (range for Good: 50.0-75.0%)",
+            "ingested": true
+          },
+          "Fair": {
+            "value": 84.0,
+            "evaluated": "Fair",
+            "matched": true,
+            "reason": "system.cpu.utilization is 84.0% (range for Fair: 75.0-90.0%)",
+            "ingested": true
+          },
+          "Poor": {
+            "value": 96.5,
+            "evaluated": "Poor",
+            "matched": true,
+            "reason": "system.cpu.utilization is 96.5% (range for Poor: 90.0-inf%)",
+            "ingested": true
+          }
+        },
+        "Recorded Health Transitions": 5,
+        "Recovery Transition Verified": true,
+        "Latest Transition": {
+          "from": "Poor",
+          "to": "Excellent",
+          "reason": "system.cpu.utilization is 22.0% (range for Excellent: 0.0-50.0%)"
+        }
+      }
+    },
+    "Test_5": {
+      "step": 5,
+      "name": "Stale Telemetry Detection & Offline Timing",
+      "status": "PASS",
+      "details": {
+        "Stale Collector State Auto-Downgraded": "Fair",
+        "Measured Average Offline Detection Time": "47.54s",
+        "Target Timing": "<= 60.0 seconds",
+        "Target Met": true,
+        "Trials Breakdown": [
+          {
+            "trial": 1,
+            "poll_latency_s": 1.77,
+            "total_detection_time_s": 46.77,
+            "reason": "Collector offline: no heartbeat received for 46s (> 45s timeout threshold)"
+          },
+          {
+            "trial": 2,
+            "poll_latency_s": 2.98,
+            "total_detection_time_s": 47.98,
+            "reason": "Collector offline: no heartbeat received for 47s (> 45s timeout threshold)"
+          },
+          {
+            "trial": 3,
+            "poll_latency_s": 2.88,
+            "total_detection_time_s": 47.88,
+            "reason": "Collector offline: no heartbeat received for 47s (> 45s timeout threshold)"
+          }
+        ]
+      }
+    },
+    "Test_6": {
+      "step": 6,
+      "name": "Contextual Anomaly Detection & Incident Correlation",
+      "status": "PASS",
+      "details": {
+        "MAD Statistical Baseline Median": "28.8%",
+        "MAD Deviation": "0.30%",
+        "Modified Z-Score": "152.89",
+        "Anomaly Detected": true,
+        "Detection Reason": "Value 96.80 deviates from dynamic baseline median 28.80 with modified Z-score 152.89 (threshold: 3.0)",
+        "Time from Anomaly Spike to Incident Generation": "64.26 ms (0.0643s)",
+        "Alert Target (<= 15.0s) Met": true,
+        "Correlated Multi-Signal Incident ID": "inc_028f8c49",
+        "Remediation Action Result": "confirmed"
+      }
+    },
+    "Test_7": {
+      "step": 7,
+      "name": "Network Outage Detection & Outbox Accumulation",
+      "status": "PASS",
+      "details": {
+        "Simulated Outage Active": true,
+        "Events Generated During Outage": 10,
+        "Outbox Accumulation Verified": true,
+        "Total Pending SQLite Outbox Count": 10,
+        "Preserved Payload IDs (Sample)": [
+          "d046826f-9ea8-465a-b76a-371e8aa384ff",
+          "3182cfb4-f4c0-49c3-bee2-c0fdb52c0ea5",
+          "a625f66c-f9a0-4110-91e5-45afd40f8361"
+        ]
+      }
+    },
+    "Test_8": {
+      "step": 8,
+      "name": "Outage Recovery, Zero Loss & Idempotency",
+      "status": "PASS",
+      "details": {
+        "Payloads Generated During Outage": 10,
+        "Payloads Flushed from SQLite Outbox": 10,
+        "Unique Payloads Recovered in Cloud DB": 10,
+        "Data Loss (Missing Count)": 0,
+        "Replay Duplicate Attempts Blocked": 10,
+        "Duplicates Stored in Cloud DB": 0,
+        "Zero Loss Target Met": true,
+        "Zero Duplicates Target Met": true
+      }
+    },
+    "Test_9": {
+      "step": 9,
+      "name": "Egress Proof Exact Serialized Payload Verification",
+      "status": "PASS",
+      "details": {
+        "Agent Computed Wire SHA-256": "a7040194f55efb59f2d0e2c937ac7a8fa595ad49bcbc10162013f453a7b2255e",
+        "Agent Local Daemon Audit Table SHA-256": "a7040194f55efb59f2d0e2c937ac7a8fa595ad49bcbc10162013f453a7b2255e",
+        "Cloud Stored Ingestion SHA-256": "a7040194f55efb59f2d0e2c937ac7a8fa595ad49bcbc10162013f453a7b2255e",
+        "Bit-for-Bit Hash Integrity": "MATCH (Identical 64-char Hex Digest)",
+        "Raw Canary Kept in Local Audit Table": true,
+        "Raw Canary Scrubbed from Wire Bytes": true
+      }
+    },
+    "Test_10": {
+      "step": 10,
+      "name": "Phase 3 Real-Time Performance Benchmarks",
+      "status": "PASS",
+      "details": {
+        "Sample Count": 25,
+        "Average Latency": "37.35 ms",
+        "p50 Latency": "38.41 ms",
+        "p95 Latency": "50.36 ms",
+        "Max Latency": "52.60 ms",
+        "Dashboard Latency Target (<= 10s)": "PASS",
+        "Alert Latency Target (<= 15s)": "PASS",
+        "Offline Detection Target (<= 60s)": "PASS",
+        "Outage Recovery Data Loss": "0 Missing (Zero Loss)",
+        "Outage Recovery Duplicates": "0 Accepted (Zero Duplicates)"
+      }
+    }
+  },
+  "performance_metrics": {
+    "offline_detection_s": {
+      "configured_timeout_s": 45,
+      "watchdog_poll_interval_s": 3,
+      "measured_avg_total_s": 47.54,
+      "target_s": 60.0,
+      "target_met": true,
+      "trials": [
+        {
+          "trial": 1,
+          "poll_latency_s": 1.77,
+          "total_detection_time_s": 46.77,
+          "reason": "Collector offline: no heartbeat received for 46s (> 45s timeout threshold)"
+        },
+        {
+          "trial": 2,
+          "poll_latency_s": 2.98,
+          "total_detection_time_s": 47.98,
+          "reason": "Collector offline: no heartbeat received for 47s (> 45s timeout threshold)"
+        },
+        {
+          "trial": 3,
+          "poll_latency_s": 2.88,
+          "total_detection_time_s": 47.88,
+          "reason": "Collector offline: no heartbeat received for 47s (> 45s timeout threshold)"
+        }
+      ]
+    },
+    "alert_latency_s": {
+      "intro_to_mad_detection_s": 0.045,
+      "intro_to_incident_s": 0.0643,
+      "target_s": 15.0,
+      "target_met": true
+    },
+    "data_loss_and_duplicates": {
+      "generated_during_outage": 10,
+      "buffered_in_sqlite": 10,
+      "successfully_recovered": 10,
+      "data_loss_missing": 0,
+      "duplicates_accepted": 0,
+      "duplicates_safely_blocked": 10
+    },
+    "telemetry_latency_ms": {
+      "sample_count": 25,
+      "average_latency_ms": 37.35,
+      "p50_latency_ms": 38.41,
+      "p95_latency_ms": 50.36,
+      "max_latency_ms": 52.6,
+      "target_s": 10.0,
+      "target_met": true
+    }
+  }
+}

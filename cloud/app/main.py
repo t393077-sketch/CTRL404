@@ -380,6 +380,7 @@ def get_events(
 ):
     agent_token = request.headers.get("X-Agent-Token")
     tenant_header = request.headers.get("X-Tenant-ID")
+    tenant_query = request.query_params.get("tenant_id")
     auth_header = request.headers.get("Authorization", "")
 
     tenant_id = "tenant_alpha"
@@ -391,6 +392,8 @@ def get_events(
             tenant_id = token_rec.tenant_id
     elif tenant_header:
         tenant_id = tenant_header
+    elif tenant_query:
+        tenant_id = tenant_query
 
     with get_tenant_session(tenant_id) as session:
         query = session.query(TelemetryEvent).filter(TelemetryEvent.tenant_id == tenant_id)
@@ -432,7 +435,7 @@ def get_events(
 # -------------------------------------------------------------------------
 @app.get("/api/v1/collectors", response_model=List[CollectorStatusOut])
 def get_collectors(request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     agent_token = request.headers.get("X-Agent-Token")
     auth_header = request.headers.get("Authorization", "")
     if "seenil_tenant_b_tok" in auth_header or "beta" in auth_header:
@@ -463,7 +466,7 @@ def get_collectors(request: Request, db: Session = Depends(get_db)):
 # -------------------------------------------------------------------------
 @app.get("/api/v1/health-transitions")
 def get_health_transitions(request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     agent_token = request.headers.get("X-Agent-Token")
     if agent_token:
         token_rec = db.query(TenantAgentToken).filter(TenantAgentToken.token == agent_token).first()
@@ -481,7 +484,7 @@ def get_health_transitions(request: Request, db: Session = Depends(get_db)):
 # -------------------------------------------------------------------------
 @app.get("/api/v1/duplicate-metrics")
 def get_duplicate_metrics(request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     agent_token = request.headers.get("X-Agent-Token")
     if agent_token:
         token_rec = db.query(TenantAgentToken).filter(TenantAgentToken.token == agent_token).first()
@@ -544,7 +547,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/api/v1/fleet/summary")
 def get_fleet_summary(request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID", "tenant_alpha")
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     tenant_name = tenant.name if tenant else ("Beta Logistics Inc" if "beta" in tenant_id else "Alpha Retail Corp")
     with get_tenant_session(tenant_id) as session:
@@ -569,7 +572,7 @@ def get_fleet_summary(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/api/v1/tenant/info")
 def get_tenant_info(request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID", "tenant_alpha")
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     tenant_name = tenant.name if tenant else ("Beta Logistics Inc" if "beta" in tenant_id else "Alpha Retail Corp")
     return {
@@ -581,7 +584,7 @@ def get_tenant_info(request: Request, db: Session = Depends(get_db)):
 @app.get("/api/v1/reliability/stats")
 def get_reliability_stats(request: Request, db: Session = Depends(get_db)):
     import numpy as np
-    tenant_id = request.headers.get("X-Tenant-ID", "tenant_alpha")
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     with get_tenant_session(tenant_id) as session:
         events = session.query(TelemetryEvent).filter(TelemetryEvent.tenant_id == tenant_id).order_by(TelemetryEvent.event_time_utc.asc()).all()
         duplicates = session.query(DuplicateMetric).filter(DuplicateMetric.tenant_id == tenant_id).all()
@@ -694,7 +697,7 @@ def trigger_collect_now():
 # -------------------------------------------------------------------------
 @app.get("/api/v1/events/{payload_id}")
 def get_single_event(payload_id: str, request: Request, db: Session = Depends(get_db)):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     try:
         pid = UUID(payload_id)
     except ValueError:
@@ -718,7 +721,7 @@ def get_single_event(payload_id: str, request: Request, db: Session = Depends(ge
 
 @app.get("/api/v1/incidents")
 def get_incidents_alias(request: Request):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     incidents = incident_correlator.get_incidents(tenant_id)
     return {"incidents": incidents}
 
@@ -739,7 +742,7 @@ async def incident_human_action(incident_id: str, request: Request):
 
 @app.get("/api/v1/aiops/incidents")
 def get_aiops_incidents(request: Request):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     incidents = incident_correlator.get_incidents(tenant_id)
     return {"incidents": incidents}
 
@@ -756,12 +759,12 @@ async def execute_aiops_remediation(incident_id: str, request: Request):
 
 @app.get("/api/v1/aiops/baselines")
 def get_aiops_baselines(request: Request):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     return {"baselines": mad_detector.get_baseline_summary(tenant_id)}
 
 @app.get("/api/v1/aiops/topology")
 def get_system_topology(request: Request):
-    tenant_id = request.headers.get("X-Tenant-ID") or "tenant_alpha"
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
     return {
         "tenant_id": tenant_id,
         "trust_boundary_status": "ENFORCED_ZERO_LEAK",

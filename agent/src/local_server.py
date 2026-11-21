@@ -118,7 +118,7 @@ def get_egress_proof():
 def get_agent_status():
     outbox_depth = count_pending_outbox()
     entries = fetch_audit_entries(limit=100)
-    total_sent = sum(1 for e in entries if e.get("egress_status") == "SENT")
+    total_sent = sum(1 for e in entries if e.get("egress_status", "").lower() in ["sent", "egressed"])
     return {
         "status": "online",
         "outbox_depth": outbox_depth,
