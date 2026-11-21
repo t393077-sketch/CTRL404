@@ -63,7 +63,7 @@ export default function ReliabilityPage() {
   const fetchData = async () => {
     try {
       // 1. Cloud Reliability Stats
-      const resStats = await fetch("http://127.0.0.1:8000/api/v1/reliability/stats", {
+      const resStats = await fetch("http://127.0.0.1:8001/api/v1/reliability/stats", {
         headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (resStats.ok) {

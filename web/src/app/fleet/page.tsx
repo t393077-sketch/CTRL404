@@ -112,7 +112,7 @@ export default function FleetPage() {
   useEffect(() => {
     const fetchCloudData = () => {
       // Collectors
-      fetch("http://127.0.0.1:8000/api/v1/collectors", {
+      fetch("http://127.0.0.1:8001/api/v1/collectors", {
         headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -130,7 +130,7 @@ export default function FleetPage() {
         .catch(() => {});
 
       // Health Transitions
-      fetch("http://127.0.0.1:8000/api/v1/health-transitions", {
+      fetch("http://127.0.0.1:8001/api/v1/health-transitions", {
         headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -140,7 +140,7 @@ export default function FleetPage() {
         .catch(() => {});
 
       // Events
-      fetch("http://127.0.0.1:8000/api/v1/events?limit=25", {
+      fetch("http://127.0.0.1:8001/api/v1/events?limit=25", {
         headers: { Authorization: "Bearer seenil_tenant_a_tok" }
       })
         .then((res) => (res.ok ? res.json() : null))
@@ -172,7 +172,7 @@ export default function FleetPage() {
 
     const connectWs = () => {
       try {
-        ws = new WebSocket("ws://127.0.0.1:8000/ws/live?tenant_id=tenant_alpha");
+        ws = new WebSocket("ws://127.0.0.1:8001/ws/live?tenant_id=tenant_alpha");
         ws.onopen = () => setWsConnected(true);
         ws.onclose = () => {
           setWsConnected(false);

@@ -331,6 +331,34 @@ async def proxy_api_to_cloud(request: Request, path: str):
         resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding")}
         return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
 
+# Reverse proxy for Agent Web UI on Port 8000
+_ui_client = httpx.AsyncClient(base_url="http://127.0.0.1:3000", timeout=15.0)
+
+@app.get("/")
+async def root_proxy():
+    res = await _ui_client.get("/agent/dashboard")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
+@app.get("/_next/{path:path}")
+async def next_proxy(path: str, request: Request):
+    res = await _ui_client.get(f"/_next/{path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers)
+
+@app.get("/agent/{path:path}")
+async def agent_page_proxy(path: str, request: Request):
+    res = await _ui_client.get(f"/agent/{path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
+@app.get("/demo-controls")
+@app.get("/egress-proof")
+async def other_agent_pages_proxy(request: Request):
+    res = await _ui_client.get(f"{request.url.path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
 if __name__ == "__main__":
     import uvicorn
     agent_port = int(os.getenv("AGENT_PORT", "8000"))

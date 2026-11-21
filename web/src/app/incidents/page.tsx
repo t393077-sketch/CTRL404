@@ -157,7 +157,7 @@ export default function IncidentsPage() {
 
   const fetchIncidents = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/incidents", {
+      const res = await fetch("http://127.0.0.1:8001/api/v1/incidents", {
         headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (res.ok) {
@@ -192,7 +192,7 @@ export default function IncidentsPage() {
 
   const handleAction = async (incidentId: string, action: "confirm" | "dismiss") => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/incidents/${incidentId}/action`, {
+      const res = await fetch(`http://127.0.0.1:8001/api/v1/incidents/${incidentId}/action`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

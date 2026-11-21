@@ -30,7 +30,7 @@ export default function CloudLoginPage() {
 
     try {
       // 2. Real Cloud Backend Auth Endpoint
-      const res = await fetch("http://127.0.0.1:8000/api/v1/auth/login", {
+      const res = await fetch("http://127.0.0.1:8001/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password: password.trim() })

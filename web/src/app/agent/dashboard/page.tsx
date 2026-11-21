@@ -198,7 +198,7 @@ export default function AgentDashboardPage() {
   const verifyProofWithCloud = async (payloadId: string, agentHash: string) => {
     setVerifyingId(payloadId);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/events/${payloadId}`, {
+      const res = await fetch(`http://127.0.0.1:8001/api/v1/events/${payloadId}`, {
         headers: { Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (res.ok) {

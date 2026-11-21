@@ -60,8 +60,8 @@ export default function ChoiceScreen() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
           
           {/* TIER 1: AGENT CONSOLE (Dark Slate Glass Card) */}
-          <Link
-            href="/agent/login"
+          <a
+            href="http://localhost:8000/agent/dashboard"
             className="group vision-card-dark p-8 flex flex-col justify-between space-y-8 cursor-pointer relative overflow-hidden"
           >
             <div className="space-y-6">
@@ -78,7 +78,7 @@ export default function ChoiceScreen() {
                 <h2 className="text-2xl font-bold text-white group-hover:text-blue-300 transition-colors">
                   SEENIL Agent Console
                 </h2>
-                <p className="text-xs text-zinc-400 font-mono mt-1">Customer Host &amp; Edge Vault • localhost:8000</p>
+                <p className="text-xs text-zinc-400 font-mono mt-1">Customer Host &amp; Edge Vault • Port 8000 (URL: :8000)</p>
               </div>
 
               <p className="text-sm text-zinc-300 leading-relaxed font-normal">
@@ -102,14 +102,14 @@ export default function ChoiceScreen() {
             </div>
 
             <div className="w-full py-3.5 px-6 rounded-full bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg">
-              <span>Enter as Local Agent</span>
+              <span>Launch Agent Console (Port 8000)</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </a>
 
           {/* TIER 2: CLOUD SAAS (Frosted White Glass Card) */}
-          <Link
-            href="/cloud/login"
+          <a
+            href="http://localhost:8001/cloud/dashboard"
             className="group vision-card-white p-8 flex flex-col justify-between space-y-8 cursor-pointer relative overflow-hidden"
           >
             <div className="space-y-6">
@@ -126,7 +126,7 @@ export default function ChoiceScreen() {
                 <h2 className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                   SEENIL Cloud SaaS
                 </h2>
-                <p className="text-xs text-slate-500 font-mono mt-1">Multi-Tenant AIOps Platform • Port 8000</p>
+                <p className="text-xs text-slate-500 font-mono mt-1">Multi-Tenant AIOps Platform • Port 8001 (URL: :8001)</p>
               </div>
 
               <p className="text-sm text-slate-600 leading-relaxed font-normal">
@@ -150,10 +150,10 @@ export default function ChoiceScreen() {
             </div>
 
             <div className="w-full py-3.5 px-6 rounded-full bg-zinc-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg">
-              <span>Enter as Cloud SaaS</span>
+              <span>Enter as Cloud SaaS (Port 8001)</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </a>
 
         </div>
       </main>

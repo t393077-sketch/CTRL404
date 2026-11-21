@@ -11,7 +11,7 @@ export function ChaosControl({ onActionCompleted }: { onActionCompleted?: () => 
     setLoading(action);
     setLastAction(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/agent/chaos/${endpoint}`, {
+      const res = await fetch(`http://127.0.0.1:8001/api/v1/agent/chaos/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

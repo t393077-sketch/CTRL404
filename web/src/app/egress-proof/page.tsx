@@ -75,7 +75,7 @@ export default function EgressProofPage() {
   const handleVerifyWithCloud = async (payloadId: string, agentHash: string) => {
     setVerifyingId(payloadId);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/events/${payloadId}`, {
+      const res = await fetch(`http://127.0.0.1:8001/api/v1/events/${payloadId}`, {
         headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (res.ok) {

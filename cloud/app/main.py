@@ -1236,3 +1236,36 @@ def get_connected_clients(
             "port": 8000
         })
     return {"clients": res, "total": len(res)}
+
+# Reverse proxy for Cloud Web UI on Port 8001
+import httpx
+from fastapi import Response
+
+_cloud_ui_client = httpx.AsyncClient(base_url="http://127.0.0.1:3000", timeout=15.0)
+
+@app.get("/")
+async def cloud_root_proxy():
+    res = await _cloud_ui_client.get("/cloud/dashboard")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
+@app.get("/_next/{path:path}")
+async def cloud_next_proxy(path: str, request: Request):
+    res = await _cloud_ui_client.get(f"/_next/{path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers)
+
+@app.get("/cloud/{path:path}")
+async def cloud_page_proxy(path: str, request: Request):
+    res = await _cloud_ui_client.get(f"/cloud/{path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
+@app.get("/fleet")
+@app.get("/incidents")
+@app.get("/reliability")
+async def cloud_other_pages_proxy(request: Request):
+    res = await _cloud_ui_client.get(f"{request.url.path}?{request.query_params}")
+    resp_headers = {k: v for k, v in res.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")}
+    return Response(content=res.content, status_code=res.status_code, headers=resp_headers, media_type="text/html")
+
