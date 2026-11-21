@@ -602,14 +602,37 @@ def get_reliability_stats(request: Request, db: Session = Depends(get_db)):
             max_latency = float(np.max(live_latencies))
             compliant = sum(1 for l in live_latencies if l <= 10000.0)
             sla_pct = round((compliant / len(live_events)) * 100.0, 1)
-            # Last 25 live samples for live charts
+
+            # Query the latest active live stream events ordered by actual arrival time (received_at)
+            recent_live = session.query(TelemetryEvent).filter(
+                TelemetryEvent.tenant_id == tenant_id,
+                TelemetryEvent.ingest_latency_ms <= 10000.0,
+                TelemetryEvent.ingest_latency_ms > 0.0
+            ).order_by(TelemetryEvent.received_at.desc()).limit(30).all()
+            recent_live.reverse()
+
             latency_samples = [
                 {
-                    "time": e.event_time_utc.strftime("%H:%M:%S") + "Z",
+                    "time": e.received_at.strftime("%H:%M:%S") + "Z",
                     "latency_ms": round(e.ingest_latency_ms, 1),
                     "sla_limit": 10000.0
                 }
-                for e in live_events[-30:]
+                for e in recent_live
+            ]
+
+            # Recent live CPU performance trends for the dashboard
+            recent_cpu = session.query(TelemetryEvent).filter(
+                TelemetryEvent.tenant_id == tenant_id,
+                TelemetryEvent.metric == "system.cpu.utilization"
+            ).order_by(TelemetryEvent.received_at.desc()).limit(8).all()
+            recent_cpu.reverse()
+
+            recent_trends = [
+                {
+                    "time": e.received_at.strftime("%H:%M:%S"),
+                    "value": round(float(e.value), 1)
+                }
+                for e in recent_cpu
             ]
         else:
             p50_latency = 4.8
@@ -618,6 +641,7 @@ def get_reliability_stats(request: Request, db: Session = Depends(get_db)):
             max_latency = 65.0
             sla_pct = 100.0
             latency_samples = []
+            recent_trends = []
 
         if recovery_events:
             rec_latencies = [e.ingest_latency_ms for e in recovery_events]
@@ -706,6 +730,7 @@ def get_reliability_stats(request: Request, db: Session = Depends(get_db)):
             "total_duplicates_blocked": total_blocked_dups,
             "out_of_order_count": 0,
             "latency_samples": latency_samples,
+            "recent_trends": recent_trends,
             "targets_scorecard": targets_scorecard,
             "regional_sla": regional_sla,
             "loss_reconciliation": {
@@ -857,6 +882,26 @@ def get_incidents_alias(request: Request):
     incidents = incident_correlator.get_incidents(tenant_id)
     return {"incidents": incidents}
 
+@app.get("/api/v1/incidents/{incident_id}/rca")
+def get_incident_rca_endpoint(incident_id: str, request: Request):
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
+    rca = incident_correlator.get_incident_rca(incident_id, tenant_id=tenant_id)
+    if not rca:
+        raise HTTPException(status_code=404, detail="Incident RCA dossier not found")
+    return rca
+
+@app.get("/api/v1/incidents/{incident_id}/topology")
+def get_incident_topology_endpoint(incident_id: str, request: Request):
+    tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
+    inc = incident_correlator._incidents.get(incident_id)
+    if not inc or inc.tenant_id != tenant_id:
+        incident_correlator._ensure_seeds(tenant_id)
+        inc = incident_correlator._incidents.get(incident_id)
+    if not inc or inc.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    topo = incident_correlator.get_topology(tenant_id)
+    return topo.get_subgraph(inc.source_nodes)
+
 @app.post("/api/v1/incidents/{incident_id}/action")
 async def incident_human_action(incident_id: str, request: Request):
     body = {}
@@ -897,9 +942,14 @@ def get_aiops_baselines(request: Request):
 @app.get("/api/v1/aiops/topology")
 def get_system_topology(request: Request):
     tenant_id = request.headers.get("X-Tenant-ID") or request.query_params.get("tenant_id") or "tenant_alpha"
+    topo = incident_correlator.get_topology(tenant_id)
+    topo_dict = topo.to_dict()
     return {
         "tenant_id": tenant_id,
         "trust_boundary_status": "ENFORCED_ZERO_LEAK",
+        "dependency_graph": topo_dict,
+        "infrastructure_nodes": topo_dict["nodes"],
+        "infrastructure_edges": topo_dict["edges"],
         "nodes": [
             {
                 "id": "node_tier1_agent",

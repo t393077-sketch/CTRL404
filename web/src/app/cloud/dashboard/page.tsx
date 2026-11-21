@@ -74,6 +74,7 @@ interface ReliabilityStats {
   total_duplicates_blocked: number;
   sla_compliant_pct: number;
   latency_samples?: { time: string; latency_ms: number; sla_limit?: number }[];
+  recent_trends?: { time: string; value: number }[];
   targets_scorecard?: {
     target_name: string;
     sla_target: string;
@@ -102,6 +103,11 @@ interface IncidentModalData {
   madScore: string;
   explanation: string;
   status: "Active" | "Mitigated" | "Dismissed";
+  confidence?: string;
+  probableCause?: string;
+  investigationSteps?: string[];
+  observedFacts?: string[];
+  alternativeCauses?: string[];
 }
 
 export default function CloudDashboardPage() {
@@ -135,12 +141,23 @@ export default function CloudDashboardPage() {
         title: "Anomaly Detected – High CPU Execution Spike",
         severity: "critical",
         time: "12:00 PM UTC",
-        sourceNode: "node_40b9c8e26f984f20",
+        sourceNode: "node_primary",
         metric: "system.cpu.utilization",
-        value: "98.8%",
+        value: "96.8%",
         madScore: "+4.82σ (Threshold > 3.0σ)",
-        explanation: "Dynamic Median Absolute Deviation (MAD) baseline breach detected on ap-south-1 worker thread pool. Sustained CPU saturation exceeding normal 24% baseline without raw log exposure.",
-        status: "Active"
+        explanation: "Dynamic Median Absolute Deviation (MAD) baseline breach detected on ap-south-1 primary host. CPU utilization increased from 56.2% to 96.8%, followed by subsequent degradation in api.latency.ms and system.memory.percent. CPU saturation is the leading hypothesis (92.3% confidence).",
+        status: "Active",
+        confidence: "92.3%",
+        probableCause: "system.cpu.utilization on node_primary",
+        observedFacts: [
+          "Metric 'system.cpu.utilization' on host 'node_primary' exhibited an anomalous deviation from baseline 56.2% to peak 96.8% (+4.82σ MAD).",
+          "6.4s later, downstream API gateway latency surged from 42ms to 1850ms."
+        ],
+        investigationSteps: [
+          "Inspect top resource-consuming worker processes and thread count on 'node_primary'.",
+          "Check for runaway worker loops or unthrottled batch queries.",
+          "Review horizontal pod autoscaler (HPA) metrics."
+        ]
       },
       {
         id: "INC-8490",
@@ -326,8 +343,10 @@ export default function CloudDashboardPage() {
   const duplicateCount = reliability?.total_duplicates_blocked ?? 0;
   const slaPct = reliability?.sla_compliant_pct ? `${reliability.sla_compliant_pct}%` : "100%";
 
-  const trendsData = (reliability?.latency_samples && reliability.latency_samples.length > 0)
-    ? reliability.latency_samples.slice(-5).map((s) => ({ time: s.time.slice(0, 5), value: Math.min(100, Math.round(s.latency_ms * 5)) }))
+  const trendsData = (reliability?.recent_trends && reliability.recent_trends.length > 0)
+    ? reliability.recent_trends
+    : (reliability?.latency_samples && reliability.latency_samples.length > 0)
+    ? reliability.latency_samples.slice(-6).map((s) => ({ time: s.time.slice(0, 5), value: Math.min(100, Math.round(s.latency_ms)) }))
     : [
         { time: "12:00", value: 32 },
         { time: "12:05", value: 68 },
@@ -703,23 +722,31 @@ export default function CloudDashboardPage() {
 
             {/* ROW 2: CARD 5 — RECENT TRENDS (Dark Slate Glass) */}
             <div className="md:col-span-3 vision-card-dark p-5 flex flex-col justify-between">
-              <div>
-                <span className="text-xs font-medium text-white/60 uppercase tracking-wider block">Performance over time</span>
-                <h3 className="text-base font-bold text-white mt-0.5">Recent Trends</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-white/60 uppercase tracking-wider block">Live Host CPU Load %</span>
+                  <h3 className="text-base font-bold text-white mt-0.5">Recent Trends</h3>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-[10px] text-cyan-300 font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  Live Stream
+                </div>
               </div>
 
               <div className="h-44 w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendsData}>
                     <XAxis dataKey="time" stroke="#71717A" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#71717A" fontSize={10} domain={[0, 100]} tickLine={false} axisLine={false} ticks={[25, 50, 75, 100]} />
+                    <YAxis stroke="#71717A" fontSize={10} domain={[0, 100]} tickLine={false} axisLine={false} ticks={[25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} />
                     <Tooltip
+                      formatter={(val: any) => [`${Number(val).toFixed(1)}%`, "CPU Utilization"]}
                       contentStyle={{
                         background: "rgba(24, 24, 27, 0.95)",
                         border: "1px solid rgba(255,255,255,0.2)",
                         borderRadius: "14px",
                         color: "#FFFFFF",
                         fontSize: "11px",
+                        fontFamily: "monospace",
                         boxShadow: "0 10px 25px rgba(0,0,0,0.5)"
                       }}
                     />
@@ -1548,6 +1575,16 @@ export default function CloudDashboardPage() {
               </div>
             </div>
 
+            {selectedIncident.probableCause && (
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-xs font-mono space-y-1">
+                <div className="text-[10px] text-rose-400 uppercase font-bold tracking-wider flex items-center justify-between">
+                  <span>PRIMARY PROBABLE CAUSE (TOPOLOGY HYPOTHESIS)</span>
+                  <span className="text-cyan-400 font-semibold">{selectedIncident.confidence || "92.3%"} Confidence</span>
+                </div>
+                <div className="text-white font-bold text-sm">{selectedIncident.probableCause}</div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">
                 Explainable Root-Cause Analysis (Metadata Only)
@@ -1556,6 +1593,33 @@ export default function CloudDashboardPage() {
                 {selectedIncident.explanation}
               </div>
             </div>
+
+            {selectedIncident.observedFacts && (
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs font-mono space-y-1.5">
+                <span className="text-[10px] uppercase text-slate-400 font-bold block">1. Observed Telemetry Facts</span>
+                <ul className="text-slate-300 space-y-1 list-disc pl-4 text-[11px]">
+                  {selectedIncident.observedFacts.map((fact, i) => (
+                    <li key={i}>{fact}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {selectedIncident.investigationSteps && (
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs font-mono space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase text-cyan-400 font-bold block">2. Recommended Investigation Runbook</span>
+                  <a href="/incidents" className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-semibold">
+                    View Full Topology Graph &rarr;
+                  </a>
+                </div>
+                <ol className="text-slate-300 space-y-1 list-decimal pl-4 text-[11px]">
+                  {selectedIncident.investigationSteps.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             {/* SECTION 1.7: Human-Approved Remediation Action */}
             <div className="pt-2 flex flex-col gap-3 border-t border-white/10">
