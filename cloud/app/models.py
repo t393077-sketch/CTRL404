@@ -79,10 +79,13 @@ class TelemetryEvent(Base):
     severity = Column(String(16), nullable=False)
     alert_context = Column(String(200), nullable=False)
     payload_sha256 = Column(String(64), nullable=True)
+    is_synthetic = Column(Boolean, default=False, nullable=False, index=True)
 
     __table_args__ = (
         Index("idx_tenant_event_time", "tenant_id", "event_time_utc"),
         Index("idx_tenant_source", "tenant_id", "source_id"),
+        Index("idx_tenant_cat_time", "tenant_id", "category", "event_time_utc"),
+        Index("idx_is_synthetic", "is_synthetic"),
     )
 
 
@@ -125,3 +128,107 @@ class HealthTransition(Base):
     to_health = Column(String(16), nullable=False)
     reason = Column(String(256), nullable=False)
     transition_time_utc = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+# Dedicated Optimized Tables for Diversified Infrastructure Telemetry
+class NetworkMetric(Base):
+    __tablename__ = "metrics_network"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    metric = Column(String(128), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    is_synthetic = Column(Boolean, default=False, index=True)
+    __table_args__ = (
+        Index("idx_net_tenant_metric_time", "tenant_id", "metric", "timestamp"),
+    )
+
+
+class ComputeMetric(Base):
+    __tablename__ = "metrics_compute"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    metric = Column(String(128), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    is_synthetic = Column(Boolean, default=False, index=True)
+    __table_args__ = (
+        Index("idx_compute_tenant_metric_time", "tenant_id", "metric", "timestamp"),
+    )
+
+
+class StorageMetric(Base):
+    __tablename__ = "metrics_storage"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    metric = Column(String(128), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    is_synthetic = Column(Boolean, default=False, index=True)
+    __table_args__ = (
+        Index("idx_storage_tenant_metric_time", "tenant_id", "metric", "timestamp"),
+    )
+
+
+class DatabaseMetric(Base):
+    __tablename__ = "metrics_database"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    metric = Column(String(128), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    is_synthetic = Column(Boolean, default=False, index=True)
+    __table_args__ = (
+        Index("idx_db_tenant_metric_time", "tenant_id", "metric", "timestamp"),
+    )
+
+
+class HeartbeatRecord(Base):
+    __tablename__ = "heartbeat_records"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    status = Column(String(32), default="online")
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    latency_ms = Column(Float, default=0.0)
+
+
+class SecurityEgressEvent(Base):
+    __tablename__ = "security_egress_events"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    payload_id = Column(String(64), nullable=False, index=True)
+    metric = Column(String(128), nullable=False)
+    sha256_hash = Column(String(64), nullable=False)
+    egress_status = Column(String(32), nullable=False)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class AlertRecord(Base):
+    __tablename__ = "alert_records"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    client_id = Column(String(128), nullable=False, index=True)
+    alert_type = Column(String(64), nullable=False)
+    severity = Column(String(16), nullable=False)
+    metric = Column(String(128), nullable=False)
+    value = Column(Float, nullable=False)
+    threshold = Column(Float, nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class AIOpsIncidentRecord(Base):
+    __tablename__ = "aiops_incident_records"
+    incident_id = Column(String(64), primary_key=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    root_cause = Column(String(256), nullable=False)
+    confidence = Column(Float, nullable=False)
+    severity = Column(String(16), nullable=False)
+    status = Column(String(32), default="Active")
+    created_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)

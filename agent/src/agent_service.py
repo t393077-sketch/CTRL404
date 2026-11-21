@@ -9,6 +9,11 @@ from .pseudonymizer import get_pseudonymous_source_id
 from .redaction import redact_text
 from .collectors.host_metrics import collect_host_metrics
 from .collectors.network_probe import probe_network_latency
+from .collectors.compute_collector import collect_compute_metrics
+from .collectors.network_collector import collect_network_metrics
+from .collectors.storage_collector import collect_storage_metrics
+from .collectors.database_collector import collect_database_metrics
+from .collectors.system_health_collector import collect_system_health_metrics, update_transmission_status
 from .collectors.log_tailer import LogTailer
 from .storage.db import init_agent_storage
 from .storage.outbox import enqueue_outbox, fetch_pending_outbox, mark_outbox_sent, record_outbox_failure, count_pending_outbox
@@ -58,9 +63,12 @@ class AgentService:
         """
         raw_items: List[Dict[str, Any]] = []
 
-        # 1. Real Collectors
-        raw_items.extend(collect_host_metrics())
-        raw_items.extend(probe_network_latency())
+        # 1. Real 5-Category Collectors (Compute, Network, Storage, Database, System Health)
+        raw_items.extend(collect_compute_metrics())
+        raw_items.extend(collect_network_metrics())
+        raw_items.extend(collect_storage_metrics())
+        raw_items.extend(collect_database_metrics())
+        raw_items.extend(collect_system_health_metrics())
         raw_items.extend(self.log_tailer.process_new_lines())
 
         processed_events = []
@@ -94,6 +102,7 @@ class AgentService:
 
             # 3. Try Sending to Cloud
             success, code, msg = send_payload_to_cloud(payload)
+            update_transmission_status(success)
 
             if success:
                 egress_status = "egressed"

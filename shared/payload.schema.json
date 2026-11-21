@@ -58,7 +58,7 @@
     },
     "category": {
       "type": "string",
-      "enum": ["infrastructure", "network", "application", "security"],
+      "enum": ["compute", "network", "storage", "database", "system_health", "infrastructure", "application", "security"],
       "description": "Observed domain category"
     },
     "severity": {

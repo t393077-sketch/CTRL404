@@ -60,7 +60,7 @@ pipeline_counters = {
 
 def background_collector_loop():
     logger.info("Agent daemon background collection loop started.")
-    time.sleep(2)
+    time.sleep(1)
     service = AgentService()
     while True:
         try:
@@ -70,7 +70,7 @@ def background_collector_loop():
                 pipeline_counters[k] += len(events) or 1
         except Exception as e:
             logger.warning(f"Background collector error: {e}")
-        time.sleep(10)
+        time.sleep(1.0)
 
 @app.on_event("startup")
 def start_background_loop():
@@ -309,6 +309,29 @@ def redact_live_stream(req: RedactRequest):
         "payload": payload
     }
 
+# Transparent fallback proxy for any frontend calls directing to Agent on port 8000
+import httpx
+from fastapi import Response
+
+@app.api_route("/api/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
+async def proxy_api_to_cloud(request: Request, path: str):
+    """Seamlessly proxies cloud requests from port 8000 to independent Cloud Backend on port 8001"""
+    cloud_url = f"{agent_settings.CLOUD_BASE_URL}/api/v1/{path}"
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        req_headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
+        body = await request.body()
+        resp = await client.request(
+            method=request.method,
+            url=cloud_url,
+            params=request.query_params,
+            content=body,
+            headers=req_headers
+        )
+        # Exclude transfer-encoding / content-encoding from proxy response
+        resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding")}
+        return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8765)
+    agent_port = int(os.getenv("AGENT_PORT", "8000"))
+    uvicorn.run(app, host="127.0.0.1", port=agent_port)

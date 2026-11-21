@@ -17,7 +17,9 @@ from .config import settings
 from .database import init_db, get_db, get_tenant_session, SessionLocal
 from .models import (
     TelemetryEvent, DuplicateMetric, CollectorStatus, HealthTransition,
-    TenantAgentToken, Tenant
+    TenantAgentToken, Tenant,
+    NetworkMetric, ComputeMetric, StorageMetric, DatabaseMetric,
+    HeartbeatRecord, SecurityEgressEvent, AlertRecord, AIOpsIncidentRecord
 )
 from .schemas import (
     IngestResponse, HeartbeatRequest, HeartbeatResponse,
@@ -130,7 +132,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -225,6 +227,7 @@ async def ingest_telemetry(request: Request, db: Session = Depends(get_db)):
     final_health = evaluated_state if evaluated_state else health_state
 
     # Store event
+    cat_name = payload_dict["category"]
     new_event = TelemetryEvent(
         payload_id=payload_id,
         tenant_id=tenant_id,
@@ -236,12 +239,26 @@ async def ingest_telemetry(request: Request, db: Session = Depends(get_db)):
         ingest_latency_ms=latency_ms,
         source_tz=payload_dict.get("source_tz", "UTC"),
         health=final_health,
-        category=payload_dict["category"],
+        category=cat_name,
         severity=payload_dict["severity"],
         alert_context=payload_dict.get("alert_context", "")[:200],
-        payload_sha256=payload_sha
+        payload_sha256=payload_sha,
+        is_synthetic=False
     )
     db.add(new_event)
+
+    # Insert into categorized table for optimized domain querying
+    try:
+        if cat_name == "compute":
+            db.add(ComputeMetric(tenant_id=tenant_id, client_id=source_id, metric=metric, value=value, timestamp=event_time_utc, is_synthetic=False))
+        elif cat_name == "network":
+            db.add(NetworkMetric(tenant_id=tenant_id, client_id=source_id, metric=metric, value=value, timestamp=event_time_utc, is_synthetic=False))
+        elif cat_name == "storage":
+            db.add(StorageMetric(tenant_id=tenant_id, client_id=source_id, metric=metric, value=value, timestamp=event_time_utc, is_synthetic=False))
+        elif cat_name == "database":
+            db.add(DatabaseMetric(tenant_id=tenant_id, client_id=source_id, metric=metric, value=value, timestamp=event_time_utc, is_synthetic=False))
+    except Exception:
+        pass
 
     # Update collector status & check health transitions
     record_health_transition_if_changed(
@@ -1009,3 +1026,213 @@ def get_system_topology(request: Request):
             {"from": "node_cloud_ingest", "to": "node_aiops_correlator", "label": "Streaming WebSocket"}
         ]
     }
+
+# -------------------------------------------------------------------------
+# Step 7: Historical Telemetry Explorer & High-Performance DB Analytics
+# -------------------------------------------------------------------------
+import time
+from sqlalchemy import func, text
+
+@app.get("/api/v1/telemetry/historical")
+def get_historical_telemetry(
+    tenant_id: str = Query("tenant_alpha"),
+    category: Optional[str] = None,
+    metric: Optional[str] = None,
+    source_id: Optional[str] = None,
+    include_synthetic: bool = Query(True),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db)
+):
+    """
+    High-performance historical telemetry query with SQL aggregation & pagination.
+    Demonstrates actual database query execution time in milliseconds.
+    """
+    t0 = time.perf_counter()
+    query = db.query(TelemetryEvent).filter(TelemetryEvent.tenant_id == tenant_id)
+
+    if not include_synthetic:
+        query = query.filter(TelemetryEvent.is_synthetic == False)
+    if category:
+        query = query.filter(TelemetryEvent.category == category)
+    if metric:
+        query = query.filter(TelemetryEvent.metric == metric)
+    if source_id:
+        query = query.filter(TelemetryEvent.source_id == source_id)
+
+    total_count = query.count()
+
+    # Fast SQL aggregations on DB engine
+    stats = query.with_entities(
+        func.avg(TelemetryEvent.value).label("avg"),
+        func.min(TelemetryEvent.value).label("min"),
+        func.max(TelemetryEvent.value).label("max"),
+        func.avg(TelemetryEvent.ingest_latency_ms).label("avg_latency")
+    ).first() if total_count > 0 else None
+
+    offset = (page - 1) * page_size
+    items = query.order_by(desc(TelemetryEvent.event_time_utc)).offset(offset).limit(page_size).all()
+    exec_time_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+
+    return {
+        "query_execution_time_ms": exec_time_ms,
+        "total_records": total_count,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": max(1, (total_count + page_size - 1) // page_size),
+        "stats": {
+            "avg_value": round(float(stats.avg or 0.0), 2) if stats else 0.0,
+            "min_value": round(float(stats.min or 0.0), 2) if stats else 0.0,
+            "max_value": round(float(stats.max or 0.0), 2) if stats else 0.0,
+            "avg_latency_ms": round(float(stats.avg_latency or 0.0), 2) if stats else 0.0
+        },
+        "records": [
+            {
+                "payload_id": str(i.payload_id),
+                "source_id": i.source_id,
+                "metric": i.metric,
+                "value": i.value,
+                "category": i.category,
+                "health": i.health,
+                "severity": i.severity,
+                "event_time_utc": i.event_time_utc.isoformat() if hasattr(i.event_time_utc, 'isoformat') else str(i.event_time_utc),
+                "ingest_latency_ms": i.ingest_latency_ms,
+                "alert_context": i.alert_context,
+                "is_synthetic": getattr(i, "is_synthetic", False)
+            }
+            for i in items
+        ]
+    }
+
+@app.get("/api/v1/cloud/health")
+def get_cloud_health(db: Session = Depends(get_db)):
+    """Cloud Infrastructure Health & Live DB Pool Status"""
+    import psutil
+    t0 = time.perf_counter()
+    db_alive = True
+    try:
+        db.execute(text("SELECT 1"))
+        db_ping_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+    except Exception:
+        db_alive = False
+        db_ping_ms = 999.0
+
+    total_events = db.query(TelemetryEvent).count()
+    real_events = db.query(TelemetryEvent).filter(TelemetryEvent.is_synthetic == False).count()
+    synthetic_events = total_events - real_events
+    active_collectors = db.query(CollectorStatus).filter(CollectorStatus.status == "online").count()
+
+    cpu = psutil.cpu_percent(interval=None)
+    mem = psutil.virtual_memory()
+
+    return {
+        "status": "healthy" if db_alive else "degraded",
+        "database": {
+            "status": "connected" if db_alive else "disconnected",
+            "dialect": db.bind.dialect.name,
+            "ping_latency_ms": db_ping_ms,
+            "total_records": total_events,
+            "real_telemetry_records": real_events,
+            "synthetic_test_records": synthetic_events
+        },
+        "host": {
+            "cpu_percent": cpu,
+            "memory_percent": mem.percent,
+            "memory_available_mb": round(mem.available / (1024 * 1024), 1)
+        },
+        "fleet": {
+            "active_collectors": active_collectors,
+            "websocket_clients": len(ws_manager.active_connections)
+        },
+        "cloud_node": {
+            "port": 8001,
+            "process": "Independent FastAPI Cloud Ingestion Engine"
+        },
+        "timestamp_utc": datetime.now(timezone.utc).isoformat()
+    }
+
+@app.get("/api/v1/network/info")
+def get_network_info():
+    """Detected Network Interfaces, Hostnames & Real LAN IP Discovery"""
+    import socket
+    import psutil
+    hostname = socket.gethostname()
+    interfaces = []
+    try:
+        for iface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                if addr.family == socket.AF_INET:
+                    interfaces.append({
+                        "interface": iface,
+                        "ip_address": addr.address,
+                        "netmask": addr.netmask,
+                        "is_loopback": addr.address.startswith("127.")
+                    })
+    except Exception:
+        pass
+
+    primary_ip = next((i["ip_address"] for i in interfaces if not i["is_loopback"] and not i["ip_address"].startswith("169.254.")), "127.0.0.1")
+    return {
+        "hostname": hostname,
+        "interfaces": interfaces,
+        "primary_ip": primary_ip,
+        "cloud_port": 8001,
+        "agent_port": 8000
+    }
+
+@app.get("/api/v1/metrics/category-summary")
+def get_category_summary(
+    tenant_id: str = Query("tenant_alpha"),
+    db: Session = Depends(get_db)
+):
+    """Returns live metric values grouped across all 5 infrastructure categories"""
+    cats = ["compute", "network", "storage", "database", "system_health"]
+    results = {}
+    for cat in cats:
+        latest = db.query(TelemetryEvent).filter(
+            TelemetryEvent.tenant_id == tenant_id,
+            TelemetryEvent.category == cat
+        ).order_by(desc(TelemetryEvent.event_time_utc)).limit(15).all()
+
+        metric_map = {}
+        for ev in latest:
+            if ev.metric not in metric_map:
+                metric_map[ev.metric] = {
+                    "value": ev.value,
+                    "health": ev.health,
+                    "severity": ev.severity,
+                    "alert_context": ev.alert_context,
+                    "timestamp": ev.event_time_utc.isoformat() if hasattr(ev.event_time_utc, 'isoformat') else str(ev.event_time_utc)
+                }
+        results[cat] = {
+            "metrics": metric_map,
+            "count": len(metric_map),
+            "status": "Healthy" if all(m["health"] in ("Excellent", "Good") for m in metric_map.values()) else "Degraded"
+        }
+    return results
+
+@app.get("/api/v1/clients/connected")
+def get_connected_clients(
+    tenant_id: str = Query("tenant_alpha"),
+    db: Session = Depends(get_db)
+):
+    """Returns list of connected client/agent nodes with IP, status and heartbeat"""
+    collectors = db.query(CollectorStatus).filter(CollectorStatus.tenant_id == tenant_id).all()
+    now_utc = datetime.now(timezone.utc)
+    res = []
+    for c in collectors:
+        hb = c.last_heartbeat_utc
+        if hb.tzinfo is None:
+            hb = hb.replace(tzinfo=timezone.utc)
+        age_sec = int((now_utc - hb).total_seconds())
+        res.append({
+            "source_id": c.source_id,
+            "status": c.status,
+            "last_heartbeat_utc": hb.isoformat(),
+            "heartbeat_age_seconds": age_sec,
+            "version": c.version or "1.0.0",
+            "config_status": c.config_status or "healthy",
+            "offline_reason": c.offline_reason,
+            "port": 8000
+        })
+    return {"clients": res, "total": len(res)}
