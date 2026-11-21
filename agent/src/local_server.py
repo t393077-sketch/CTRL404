@@ -245,6 +245,7 @@ def control_send_late_event():
     }
 
 @app.post("/control/spike-cpu")
+@app.post("/control/inject-anomaly")
 def control_spike_cpu():
     service = AgentService()
     now_utc = datetime.now(timezone.utc)

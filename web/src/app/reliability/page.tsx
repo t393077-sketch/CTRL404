@@ -64,7 +64,7 @@ export default function ReliabilityPage() {
     try {
       // 1. Cloud Reliability Stats
       const resStats = await fetch("http://127.0.0.1:8000/api/v1/reliability/stats", {
-        headers: { Authorization: "Bearer seenil_tenant_a_tok" }
+        headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (resStats.ok) {
         const data = await resStats.json();

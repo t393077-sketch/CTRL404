@@ -113,7 +113,7 @@ export default function FleetPage() {
     const fetchCloudData = () => {
       // Collectors
       fetch("http://127.0.0.1:8000/api/v1/collectors", {
-        headers: { Authorization: "Bearer seenil_tenant_a_tok" }
+        headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -131,7 +131,7 @@ export default function FleetPage() {
 
       // Health Transitions
       fetch("http://127.0.0.1:8000/api/v1/health-transitions", {
-        headers: { Authorization: "Bearer seenil_tenant_a_tok" }
+        headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {

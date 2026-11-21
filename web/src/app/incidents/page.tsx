@@ -47,7 +47,7 @@ export default function IncidentsPage() {
   const fetchIncidents = async () => {
     try {
       const res = await fetch("http://127.0.0.1:8000/api/v1/incidents", {
-        headers: { Authorization: "Bearer seenil_tenant_a_tok" }
+        headers: { "X-Tenant-ID": "tenant_alpha", Authorization: "Bearer seenil_tenant_a_tok" }
       });
       if (res.ok) {
         const data = await res.json();

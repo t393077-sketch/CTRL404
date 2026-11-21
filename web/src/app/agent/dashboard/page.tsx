@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Terminal,
   ShieldCheck,
@@ -55,14 +56,23 @@ interface AgentStatus {
 }
 
 export default function AgentDashboardPage() {
+  const router = useRouter();
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+  const [isDaemonOffline, setIsDaemonOffline] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAgentTab, setActiveAgentTab] = useState<"console" | "vault" | "pipeline" | "outbox" | "proof">("console");
   const [copiedHash, setCopiedHash] = useState(false);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("seenil_agent_session");
+    }
+    router.push("/agent/login");
+  };
 
   // Live Redaction Sandbox State
   const [sandboxInput, setSandboxInput] = useState(
@@ -93,8 +103,11 @@ export default function AgentDashboardPage() {
       if (resStatus.ok) {
         const data = await resStatus.json();
         setAgentStatus(data);
+        setIsDaemonOffline(false);
       }
-    } catch (_) {}
+    } catch (_) {
+      setIsDaemonOffline(true);
+    }
   };
 
   useEffect(() => {
@@ -265,13 +278,13 @@ export default function AgentDashboardPage() {
           <FileCheck2 className="w-5 h-5 text-emerald-400" />
         </button>
 
-        <Link
-          href="/"
+        <button
+          onClick={handleLogout}
           className="mt-4 p-2.5 rounded-xl text-white/40 hover:text-rose-400 hover:bg-white/10 transition-all duration-200 hover:scale-110 cursor-pointer vision-interactive"
-          title="Exit to Portal Selector"
+          title="Sign Out of Enclave Console"
         >
           <LogOut className="w-5 h-5" />
-        </Link>
+        </button>
       </div>
 
       {/* MAIN CONTAINER */}
@@ -420,6 +433,19 @@ export default function AgentDashboardPage() {
             </div>
             <button onClick={() => setActionNotice(null)} className="text-emerald-700 hover:text-emerald-950 font-bold cursor-pointer">
               ✕
+            </button>
+          </div>
+        )}
+
+        {/* OFFLINE WARNING BANNER */}
+        {isDaemonOffline && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <span>Agent Daemon temporarily unreachable on localhost:8765. Attempting to reconnect...</span>
+            </div>
+            <button onClick={() => fetchAgentData()} className="text-amber-800 hover:text-black font-bold cursor-pointer underline text-[11px]">
+              Retry Now
             </button>
           </div>
         )}

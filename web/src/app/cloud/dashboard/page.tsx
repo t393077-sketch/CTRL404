@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   LayoutGrid,
   BarChart3,
@@ -44,13 +45,29 @@ import {
   Tooltip
 } from "recharts";
 
+interface FleetSummary {
+  tenant_id: string;
+  tenant_name: string;
+  data_region: string;
+  counts: {
+    Excellent: number;
+    Good: number;
+    Fair: number;
+    Poor: number;
+    offline: number;
+  };
+  total_collectors: number;
+}
+
 interface ReliabilityStats {
   tenant_id: string;
   total_events: number;
   p50_latency_ms: number;
+  avg_latency_ms: number;
   p95_latency_ms: number;
   total_duplicates_blocked: number;
   sla_compliant_pct: number;
+  latency_samples?: { time: string; latency_ms: number }[];
 }
 
 interface IncidentModalData {
@@ -67,9 +84,11 @@ interface IncidentModalData {
 }
 
 export default function CloudDashboardPage() {
+  const router = useRouter();
   const [selectedTenant, setSelectedTenant] = useState<"Alpha Financial Corp" | "Beta Cloud Systems">(
     "Alpha Financial Corp"
   );
+  const [fleetSummary, setFleetSummary] = useState<FleetSummary | null>(null);
   const [reliability, setReliability] = useState<ReliabilityStats | null>(null);
   const [activeDate, setActiveDate] = useState(21);
   const [selectedIncident, setSelectedIncident] = useState<IncidentModalData | null>(null);
@@ -77,8 +96,15 @@ export default function CloudDashboardPage() {
   const [isMitigating, setIsMitigating] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "analytics" | "incidents" | "sla">("dashboard");
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [liveEventCount, setLiveEventCount] = useState(0);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // Daily events map
+  // Active tenant ID for API calls
+  const tenantId = selectedTenant === "Beta Cloud Systems" ? "tenant_beta" : "tenant_alpha";
+  const tenantToken = selectedTenant === "Beta Cloud Systems" ? "token_beta_sec_33918" : "token_alpha_sec_98124";
+
+  // Daily events map per tenant
   const eventsByDate: Record<number, IncidentModalData[]> = {
     21: [
       {
@@ -121,14 +147,14 @@ export default function CloudDashboardPage() {
     20: [
       {
         id: "INC-8472",
-        title: "Latency Breach – EU Ingest Gateway",
+        title: "Latency Breach – Ingest Transit Gateway",
         severity: "warning",
         time: "10:14 AM UTC",
         sourceNode: "node_eu_west_882b",
         metric: "network.latency.rtt",
         value: "185ms",
         madScore: "+3.24σ",
-        explanation: "Temporary route congestion detected on European egress transit. Automatically re-routed via Tier-1 transit peer.",
+        explanation: "Temporary route congestion detected on egress transit. Automatically re-routed via Tier-1 transit peer.",
         status: "Mitigated"
       }
     ],
@@ -138,7 +164,7 @@ export default function CloudDashboardPage() {
         title: "Zero-Exposure Compliance Health Check",
         severity: "info",
         time: "09:00 AM UTC",
-        sourceNode: "All 16 Fleet Nodes",
+        sourceNode: "All Fleet Nodes",
         metric: "security.audit",
         value: "100% Passed",
         madScore: "Nominal",
@@ -158,48 +184,119 @@ export default function CloudDashboardPage() {
       metric: "fleet.health",
       value: "Normal",
       madScore: "0.0σ",
-      explanation: "All 16 collector nodes operating within healthy statistical bounds.",
+      explanation: "All collector nodes operating within healthy statistical bounds.",
       status: "Mitigated" as const
     }
   ];
 
-  const fetchCloudData = async () => {
+  // Fetch real backend data for the selected tenant
+  const fetchCloudData = async (tId: string) => {
     try {
+      // 1. Fleet summary
+      const resFleet = await fetch("http://127.0.0.1:8000/api/v1/fleet/summary", {
+        headers: { "X-Tenant-ID": tId, Authorization: `Bearer ${tenantToken}` }
+      });
+      if (resFleet.ok) {
+        const dataFleet = await resFleet.json();
+        setFleetSummary(dataFleet);
+      }
+
+      // 2. Reliability stats
       const resRel = await fetch("http://127.0.0.1:8000/api/v1/reliability/stats", {
-        headers: { Authorization: "Bearer seenil_tenant_a_tok" }
+        headers: { "X-Tenant-ID": tId, Authorization: `Bearer ${tenantToken}` }
       });
       if (resRel.ok) {
-        const data = await resRel.json();
-        setReliability(data);
+        const dataRel = await resRel.json();
+        setReliability(dataRel);
       }
     } catch (_) {}
   };
 
+  // Re-fetch on tenant change
   useEffect(() => {
-    fetchCloudData();
-    const interval = setInterval(fetchCloudData, 4000);
+    fetchCloudData(tenantId);
+    const interval = setInterval(() => fetchCloudData(tenantId), 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [tenantId]);
 
-  const handleRemediate = (incidentId: string) => {
+  // WebSocket live connection per tenant
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    try {
+      ws = new WebSocket(`ws://127.0.0.1:8000/ws/live?tenant_id=${tenantId}`);
+      ws.onopen = () => {
+        setWsConnected(true);
+      };
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          setLiveEventCount((prev) => prev + 1);
+        } catch (_) {}
+      };
+      ws.onclose = () => setWsConnected(false);
+      ws.onerror = () => setWsConnected(false);
+      wsRef.current = ws;
+    } catch (_) {
+      setWsConnected(false);
+    }
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [tenantId]);
+
+  const handleRemediate = async (incidentId: string) => {
     setIsMitigating(true);
+    try {
+      // Real backend incident remediation call
+      await fetch(`http://127.0.0.1:8000/api/v1/incidents/${incidentId}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Tenant-ID": tenantId },
+        body: JSON.stringify({ action: "confirm" })
+      });
+    } catch (_) {}
+
     setTimeout(() => {
       setIsMitigating(false);
       setActionSuccessMessage(`Autonomous policy remediation executed for ${incidentId}. Node throttle re-allocated and thread pool stabilized.`);
       if (selectedIncident) {
         setSelectedIncident({ ...selectedIncident, status: "Mitigated" });
       }
+      fetchCloudData(tenantId);
       setTimeout(() => setActionSuccessMessage(null), 4000);
-    }, 800);
+    }, 600);
   };
 
-  const trendsData = [
-    { time: "12:00", value: 32 },
-    { time: "12:05", value: 68 },
-    { time: "12:10", value: 45 },
-    { time: "12:15", value: 88 },
-    { time: "12:20", value: 54 }
-  ];
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("seenil_cloud_session");
+    }
+    router.push("/cloud/login");
+  };
+
+  // Compute stats
+  const totalCollectors = fleetSummary?.total_collectors || (selectedTenant === "Beta Cloud Systems" ? 8 : 16);
+  const offlineCount = fleetSummary?.counts?.offline ?? (selectedTenant === "Beta Cloud Systems" ? 1 : 0);
+  const excellentPct = fleetSummary?.counts ? Math.round((fleetSummary.counts.Excellent / (totalCollectors || 1)) * 100) : 90;
+  const goodPct = fleetSummary?.counts ? Math.round((fleetSummary.counts.Good / (totalCollectors || 1)) * 100) : 6;
+  const fairPct = fleetSummary?.counts ? Math.round((fleetSummary.counts.Fair / (totalCollectors || 1)) * 100) : 3;
+  const poorPct = fleetSummary?.counts ? Math.round((fleetSummary.counts.Poor / (totalCollectors || 1)) * 100) : 1;
+
+  const ingestLatency = reliability?.p50_latency_ms ? `${reliability.p50_latency_ms}ms` : "4.8ms";
+  const duplicateCount = reliability?.total_duplicates_blocked ?? 0;
+  const slaPct = reliability?.sla_compliant_pct ? `${reliability.sla_compliant_pct}%` : "100%";
+
+  const trendsData = (reliability?.latency_samples && reliability.latency_samples.length > 0)
+    ? reliability.latency_samples.slice(-5).map((s) => ({ time: s.time.slice(0, 5), value: Math.min(100, Math.round(s.latency_ms * 5)) }))
+    : [
+        { time: "12:00", value: 32 },
+        { time: "12:05", value: 68 },
+        { time: "12:10", value: 45 },
+        { time: "12:15", value: 88 },
+        { time: "12:20", value: 54 }
+      ];
 
   const resourceData = [
     { time: "30%", value: 20 },
@@ -230,7 +327,7 @@ export default function CloudDashboardPage() {
           className={`p-2.5 rounded-xl transition-all duration-200 cursor-pointer vision-interactive ${
             activeTab === "analytics" ? "bg-white/25 text-white shadow-md scale-110" : "text-white/60 hover:text-white hover:bg-white/10"
           }`}
-          title="Telemetry Analytics & Live Charts"
+          title="Telemetry Analytics &amp; Live Charts"
         >
           <Activity className="w-5 h-5" />
         </button>
@@ -256,13 +353,13 @@ export default function CloudDashboardPage() {
           <BarChart3 className="w-5 h-5" />
         </button>
 
-        <Link
-          href="/"
+        <button
+          onClick={handleLogout}
           className="mt-4 p-2.5 rounded-xl text-white/40 hover:text-rose-400 hover:bg-white/10 transition-all duration-200 hover:scale-110 cursor-pointer vision-interactive"
-          title="Switch to Portal Selector"
+          title="Sign Out of Cloud SaaS"
         >
           <LogOut className="w-5 h-5" />
-        </Link>
+        </button>
       </div>
 
       {/* MAIN CONTAINER */}
@@ -273,12 +370,13 @@ export default function CloudDashboardPage() {
           {/* Tenant Switcher Pill */}
           <div className="flex items-center gap-2">
             <div className="vision-card-white px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold shadow-sm hover:shadow transition-all duration-200 cursor-pointer">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_8px_#2563EB]"></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${selectedTenant === "Beta Cloud Systems" ? "bg-purple-600 shadow-[0_0_8px_#9333EA]" : "bg-blue-600 shadow-[0_0_8px_#2563EB]"}`}></span>
               <select
                 value={selectedTenant}
                 onChange={(e) => {
-                  setSelectedTenant(e.target.value as any);
-                  setActionSuccessMessage(`Switched tenant workspace to ${e.target.value}`);
+                  const newT = e.target.value as any;
+                  setSelectedTenant(newT);
+                  setActionSuccessMessage(`Switched tenant workspace to ${newT}`);
                   setTimeout(() => setActionSuccessMessage(null), 3000);
                 }}
                 className="bg-transparent text-[#0F172A] font-semibold outline-none cursor-pointer text-xs"
@@ -319,7 +417,7 @@ export default function CloudDashboardPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Live Ingest</span>
+              <span>{wsConnected ? "WebSocket Live" : "Live Ingest"}</span>
             </div>
 
             <button
@@ -330,7 +428,11 @@ export default function CloudDashboardPage() {
               <Bell className="w-4 h-4" />
             </button>
 
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-white/80 shadow-sm cursor-pointer hover:scale-105 transition">
+            <div
+              onClick={handleLogout}
+              className="w-8 h-8 rounded-full overflow-hidden border border-white/80 shadow-sm cursor-pointer hover:scale-105 transition"
+              title="Click to Log Out"
+            >
               <img
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
                 alt="Lead Operator"
@@ -399,7 +501,7 @@ export default function CloudDashboardPage() {
               <div className="flex justify-center">
                 <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 text-xs font-semibold shadow-inner group-hover:bg-emerald-500/30 transition">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  Healthy (Click for RCA)
+                  {offlineCount > 0 ? "Degraded" : "Healthy"} (Click for RCA)
                 </div>
               </div>
             </div>
@@ -413,7 +515,7 @@ export default function CloudDashboardPage() {
 
               <div className="my-auto py-2">
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-4xl font-black tracking-tight text-slate-900">16</span>
+                  <span className="text-4xl font-black tracking-tight text-slate-900">{totalCollectors}</span>
                   <div className="flex items-center text-xs font-bold text-emerald-600 gap-0.5">
                     <span>↑ +2%</span>
                   </div>
@@ -444,7 +546,7 @@ export default function CloudDashboardPage() {
 
               <div className="text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100 flex items-center justify-between">
                 <span>Multi-Signal Ingest</span>
-                <span className="text-emerald-600 font-bold">100% Ingest Rate</span>
+                <span className="text-emerald-600 font-bold">{slaPct} SLA Rate</span>
               </div>
             </div>
 
@@ -467,7 +569,7 @@ export default function CloudDashboardPage() {
                       stroke="#10B981"
                       strokeWidth="10"
                       strokeDasharray="238.7"
-                      strokeDashoffset="23.8"
+                      strokeDashoffset={238.7 - (238.7 * excellentPct) / 100}
                       strokeLinecap="round"
                       fill="none"
                     />
@@ -484,7 +586,7 @@ export default function CloudDashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-black text-slate-900">90%</span>
+                    <span className="text-xl font-black text-slate-900">{excellentPct}%</span>
                   </div>
                 </div>
 
@@ -493,22 +595,22 @@ export default function CloudDashboardPage() {
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                     <span className="text-slate-600">Excellent</span>
-                    <span className="font-bold text-slate-900 ml-auto">90%</span>
+                    <span className="font-bold text-slate-900 ml-auto">{excellentPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
                     <span className="text-slate-600">Good</span>
-                    <span className="font-bold text-slate-900 ml-auto">6%</span>
+                    <span className="font-bold text-slate-900 ml-auto">{goodPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                     <span className="text-slate-600">Fair</span>
-                    <span className="font-bold text-slate-900 ml-auto">3%</span>
+                    <span className="font-bold text-slate-900 ml-auto">{fairPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                     <span className="text-slate-600">Poor</span>
-                    <span className="font-bold text-slate-900 ml-auto">1%</span>
+                    <span className="font-bold text-slate-900 ml-auto">{poorPct}%</span>
                   </div>
                 </div>
               </div>
@@ -526,7 +628,7 @@ export default function CloudDashboardPage() {
               {/* 3 Interlocking Dark Circular Badges */}
               <div className="my-auto py-3 flex items-center justify-center gap-2">
                 <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex flex-col items-center justify-center shadow-lg border border-white/10 hover:scale-105 transition-transform duration-200 cursor-pointer">
-                  <span className="text-sm font-black">1065</span>
+                  <span className="text-sm font-black">{totalCollectors}</span>
                   <span className="text-[9px] uppercase font-semibold text-zinc-400">Total</span>
                 </div>
                 <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex flex-col items-center justify-center shadow-lg border border-white/10 hover:scale-105 transition-transform duration-200 cursor-pointer">
@@ -551,7 +653,7 @@ export default function CloudDashboardPage() {
                   className="w-16 h-16 rounded-full bg-zinc-900 text-white flex flex-col items-center justify-center shadow-lg border border-rose-500/30 hover:scale-105 transition-transform duration-200 cursor-pointer vision-interactive"
                   title="Click to view offline incident details"
                 >
-                  <span className="text-sm font-black text-rose-400">7</span>
+                  <span className="text-sm font-black text-rose-400">{offlineCount}</span>
                   <span className="text-[9px] uppercase font-semibold text-zinc-400">Offline</span>
                 </div>
               </div>
@@ -706,7 +808,7 @@ export default function CloudDashboardPage() {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-zinc-400 font-medium">Ingest Latency</span>
                     <div className="flex items-center gap-1">
-                      <span className="font-bold text-white">4.8ms</span>
+                      <span className="font-bold text-white">{ingestLatency}</span>
                       <span className="text-[10px] text-emerald-400">↓ 12%</span>
                     </div>
                   </div>
@@ -719,12 +821,12 @@ export default function CloudDashboardPage() {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-zinc-400 font-medium">Duplicate Count</span>
                     <div className="flex items-center gap-1">
-                      <span className="font-bold text-white">0</span>
+                      <span className="font-bold text-white">{duplicateCount}</span>
                       <span className="text-[10px] text-emerald-400">↓ 0%</span>
                     </div>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: "0%" }}></div>
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: duplicateCount > 0 ? "25%" : "0%" }}></div>
                   </div>
                 </div>
 
@@ -866,7 +968,7 @@ export default function CloudDashboardPage() {
               </div>
 
               <div className="flex items-center justify-between text-xs font-semibold text-slate-600 pt-1">
-                <span>Primary Node: ap-south-1</span>
+                <span>Active Region: {selectedTenant === "Beta Cloud Systems" ? "eu-west-1 (Frankfurt)" : "ap-south-1 (Mumbai)"}</span>
                 <span className="text-emerald-700 font-bold">100% Region Online</span>
               </div>
             </div>
@@ -883,7 +985,7 @@ export default function CloudDashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Central Telemetry Analytics</span>
-                  <h2 className="text-xl font-bold text-slate-900">Dynamic Multi-Signal Anomaly Correlator</h2>
+                  <h2 className="text-xl font-bold text-slate-900">Dynamic Multi-Signal Anomaly Correlator ({selectedTenant})</h2>
                 </div>
                 <button
                   onClick={() => setActiveTab("dashboard")}
@@ -901,12 +1003,12 @@ export default function CloudDashboardPage() {
                 </div>
                 <div className="vision-card-dark p-5 space-y-2">
                   <span className="text-xs text-zinc-400">Signal 2: Ingestion Latency</span>
-                  <div className="text-2xl font-black text-cyan-400">4.8ms</div>
+                  <div className="text-2xl font-black text-cyan-400">{ingestLatency}</div>
                   <p className="text-xs text-zinc-300">Within strict sub-10ms SLA envelope across all regional gates.</p>
                 </div>
                 <div className="vision-card-dark p-5 space-y-2">
                   <span className="text-xs text-zinc-400">Signal 3: Duplicate Packets</span>
-                  <div className="text-2xl font-black text-emerald-400">0 Duplicates</div>
+                  <div className="text-2xl font-black text-emerald-400">{duplicateCount} Duplicates</div>
                   <p className="text-xs text-zinc-300">Idempotent UUID validation completely blocked duplicate payloads.</p>
                 </div>
               </div>
@@ -923,7 +1025,7 @@ export default function CloudDashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Service Level Agreement</span>
-                  <h2 className="text-xl font-bold text-slate-900">SLA Compliance &amp; Latency Distribution</h2>
+                  <h2 className="text-xl font-bold text-slate-900">SLA Compliance &amp; Latency Distribution ({selectedTenant})</h2>
                 </div>
                 <button
                   onClick={() => setActiveTab("dashboard")}
@@ -936,17 +1038,19 @@ export default function CloudDashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <span className="text-xs text-slate-500 font-semibold">SLA Compliance</span>
-                  <div className="text-2xl font-black text-emerald-600 mt-1">100.0%</div>
+                  <div className="text-2xl font-black text-emerald-600 mt-1">{slaPct}</div>
                   <span className="text-[11px] text-slate-400">Target: ≥ 99.9%</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <span className="text-xs text-slate-500 font-semibold">p50 Latency</span>
-                  <div className="text-2xl font-black text-slate-900 mt-1">4.2 ms</div>
+                  <div className="text-2xl font-black text-slate-900 mt-1">{ingestLatency}</div>
                   <span className="text-[11px] text-slate-400">Fast path buffer</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <span className="text-xs text-slate-500 font-semibold">p95 Latency</span>
-                  <div className="text-2xl font-black text-slate-900 mt-1">8.7 ms</div>
+                  <div className="text-2xl font-black text-slate-900 mt-1">
+                    {reliability?.p95_latency_ms ? `${reliability.p95_latency_ms} ms` : "8.7 ms"}
+                  </div>
                   <span className="text-[11px] text-slate-400">Target: &lt; 50ms</span>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
@@ -1058,7 +1162,7 @@ export default function CloudDashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-blue-600" />
-                <h3 className="font-bold text-slate-900">Notifications</h3>
+                <h3 className="font-bold text-slate-900">Notifications ({selectedTenant})</h3>
               </div>
               <button onClick={() => setShowNotificationModal(false)} className="text-slate-400 hover:text-black font-bold cursor-pointer">
                 ✕
@@ -1067,7 +1171,7 @@ export default function CloudDashboardPage() {
             <div className="space-y-2 text-xs">
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="font-bold text-slate-800">Fleet Watchdog Status</div>
-                <div className="text-slate-600 mt-0.5">All 16 collectors transmitting nominal heartbeats. Offline detection SLA guaranteed &lt; 60s.</div>
+                <div className="text-slate-600 mt-0.5">{totalCollectors} collectors registered. Offline detection SLA guaranteed &lt; 60s.</div>
               </div>
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="font-bold text-slate-800">Zero-Exposure Audit</div>
