@@ -1288,7 +1288,25 @@ export default function CloudDashboardPage() {
         {/* =========================================================================
             TAB: AIOPS INCIDENT INTELLIGENCE & TOPOLOGY-AWARE PREDICTIVE RCA VIEW
             ========================================================================= */}
-        {activeTab === "incidents" && (
+        {activeTab === "incidents" && (() => {
+          const activePred = (cloudIncidents.find((i: any) => i.rca?.predictive_analysis)?.rca?.predictive_analysis) || {
+            model: "Linear Regression + Double Exponential Smoothing (Holt-Winters)",
+            time_to_exhaustion_minutes: 1.2,
+            target_failure_ceiling: "100% Saturation / Kernel Thread Lock",
+            sla_breach_probability_pct: 94.2,
+            risk_level: "CRITICAL",
+            preventative_action_window_minutes: 0.8,
+            proactive_recommendation: "Preemptively trigger horizontal pod replica scale-out (+2 pods) before hard thread exhaustion.",
+            forecast_trajectory: [
+              { time: "NOW", projected_value: 96.8 },
+              { time: "T+0.4m", projected_value: 98.0 },
+              { time: "T+0.7m", projected_value: 99.2 },
+              { time: "T+1.2m (BREACH)", projected_value: 100.0 }
+            ],
+            early_warning_summary: "Trajectory analysis on 'system.cpu.utilization' projects 100% Saturation in ~1.2 mins if unmitigated"
+          };
+
+          return (
           <div className="space-y-6 animate-fadeIn">
             <div className="vision-card-white p-6 space-y-6">
               <div className="flex items-center justify-between mb-2">
@@ -1314,11 +1332,11 @@ export default function CloudDashboardPage() {
                     </span>
                     <span className="text-xs text-slate-400 font-mono">|</span>
                     <span className="text-xs font-mono text-amber-300 font-semibold">
-                      Risk: CRITICAL (94.2% SLA Breach Probability)
+                      Risk: {activePred.risk_level} ({activePred.sla_breach_probability_pct}% SLA Breach Probability)
                     </span>
                   </div>
                   <span className="text-[11px] font-mono text-slate-400">
-                    Model: Linear Regression + Double Exponential Smoothing (Holt-Winters)
+                    Model: {activePred.model}
                   </span>
                 </div>
 
@@ -1326,17 +1344,17 @@ export default function CloudDashboardPage() {
                   <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
                     <div className="text-[10px] font-mono uppercase text-slate-400">Projected Time-To-Failure (TTF)</div>
                     <div className="text-2xl font-black font-mono text-amber-400">
-                      ~1.2 mins
+                      ~{activePred.time_to_exhaustion_minutes} mins
                     </div>
                     <div className="text-[11px] text-slate-300 truncate">
-                      Ceiling: 100% Saturation / Kernel Thread Lock
+                      Ceiling: {activePred.target_failure_ceiling}
                     </div>
                   </div>
 
                   <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
                     <div className="text-[10px] font-mono uppercase text-slate-400">Preventative Action Window</div>
                     <div className="text-2xl font-black font-mono text-emerald-400">
-                      0.8 mins left
+                      {activePred.preventative_action_window_minutes} mins left
                     </div>
                     <div className="text-[11px] text-slate-300">
                       Act before hard lock to prevent customer outage
@@ -1346,7 +1364,7 @@ export default function CloudDashboardPage() {
                   <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
                     <div className="text-[10px] font-mono uppercase text-slate-400">Proactive Intervention</div>
                     <div className="text-xs font-mono text-cyan-200 leading-relaxed font-semibold">
-                      Preemptively trigger horizontal pod replica scale-out (+2 pods) before hard thread exhaustion.
+                      {activePred.proactive_recommendation}
                     </div>
                   </div>
                 </div>
@@ -1356,26 +1374,18 @@ export default function CloudDashboardPage() {
                   <div className="flex items-center justify-between text-[11px] font-mono">
                     <span className="text-slate-300 font-bold">PREDICTED HORIZON TRAJECTORY</span>
                     <span className="text-rose-400 font-semibold">
-                      Trajectory on 'system.cpu.utilization' projects 100% Saturation in ~1.2 mins if unmitigated
+                      {activePred.early_warning_summary}
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-center">
-                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
-                      <span className="text-[10px] text-slate-400 uppercase block">NOW</span>
-                      <span className="text-xs font-bold text-cyan-300 block">96.8%</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
-                      <span className="text-[10px] text-slate-400 uppercase block">T+0.4m</span>
-                      <span className="text-xs font-bold text-cyan-300 block">98.0%</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
-                      <span className="text-[10px] text-slate-400 uppercase block">T+0.7m</span>
-                      <span className="text-xs font-bold text-cyan-300 block">99.2%</span>
-                    </div>
-                    <div className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
-                      <span className="text-[10px] text-slate-400 uppercase block">T+1.2m (BREACH)</span>
-                      <span className="text-xs font-bold text-rose-400 block">100.0%</span>
-                    </div>
+                    {activePred.forecast_trajectory.map((pt: any, idx: number) => (
+                      <div key={idx} className="p-2.5 rounded bg-white/5 border border-white/10 space-y-0.5">
+                        <span className="text-[10px] text-slate-400 uppercase block">{pt.time}</span>
+                        <span className={`text-xs font-bold block ${idx === activePred.forecast_trajectory.length - 1 ? "text-rose-400" : "text-cyan-300"}`}>
+                          {pt.projected_value}%
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1648,7 +1658,8 @@ export default function CloudDashboardPage() {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* =========================================================================
             TAB 3: SLA RELIABILITY METRICS VIEW
