@@ -271,6 +271,44 @@ def control_spike_cpu():
         "events_count": 1
     }
 
+class RedactRequest(BaseModel):
+    text: str
+
+@app.post("/redact")
+def redact_live_stream(req: RedactRequest):
+    from agent.src.redaction import redact_text, calculate_shannon_entropy
+    raw = req.text
+    redacted, was_redacted = redact_text(raw)
+    
+    # Calculate max entropy across words
+    words = [w.strip(".,;:\"'()[]{}") for w in raw.split()]
+    entropies = [calculate_shannon_entropy(w) for w in words if len(w) >= 8]
+    max_entropy = max(entropies) if entropies else (calculate_shannon_entropy(raw[:20]) if raw else 0.0)
+
+    service = AgentService()
+    payload = {
+        "payload_id": "sb_" + uuid.uuid4().hex[:12],
+        "tenant_id": agent_settings.TENANT_ID,
+        "source_id": service.source_id,
+        "metric": "system.security.redaction_audit",
+        "value": round(max_entropy, 2),
+        "event_time_utc": datetime.now(timezone.utc).isoformat(),
+        "source_tz": agent_settings.SOURCE_TZ,
+        "health": "Good",
+        "category": "security",
+        "severity": "info",
+        "alert_context": redacted[:200],
+        "sanitized_preview": redacted
+    }
+
+    return {
+        "raw_input": raw,
+        "redacted_text": redacted,
+        "was_redacted": was_redacted,
+        "entropy": round(max_entropy, 2),
+        "payload": payload
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8765)

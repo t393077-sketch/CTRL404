@@ -64,7 +64,6 @@ class AgentService:
         raw_items.extend(self.log_tailer.process_new_lines())
 
         processed_events = []
-        now_utc = datetime.now(timezone.utc).isoformat()
 
         # 2. Process each item: Redact -> Construct allow-listed payload -> Audit -> Egress/Buffer
         for item in raw_items:
@@ -76,6 +75,7 @@ class AgentService:
 
             health = self.calculate_health_state(item["metric"], float(item["value"]))
             severity = item.get("severity", "warning" if health in ["Fair", "Poor"] else "info")
+            item_event_time = datetime.now(timezone.utc).isoformat()
 
             # Strictly adhere to /shared/payload.schema.json
             payload = {
@@ -84,7 +84,7 @@ class AgentService:
                 "source_id": self.source_id,
                 "metric": item["metric"],
                 "value": float(item["value"]),
-                "event_time_utc": now_utc,
+                "event_time_utc": item_event_time,
                 "source_tz": agent_settings.SOURCE_TZ,
                 "health": health,
                 "category": item["category"],
